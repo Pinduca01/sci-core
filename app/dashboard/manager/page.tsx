@@ -1,9 +1,22 @@
+'use client';
+
+import Header from '@/components/ui/header';
+import { SidebarDemo } from '@/components/ui/sidebar-demo';
+
 export default function ManagerDashboard() {
+  // Dados mockados do usuário - em produção viriam da autenticação
+  const userData = {
+    userName: 'Gerente',
+    userEmail: 'gerente@empresa.com'
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
+    <SidebarDemo>
+      <div className="flex flex-col h-full">
+        <Header userName={userData.userName} userEmail={userData.userEmail} />
+        
+        <div className="flex-1 bg-gradient-to-br from-pure-white to-fog-gray/20 p-8">
+          <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
               Dashboard Gerencial
             </h1>
@@ -11,11 +24,7 @@ export default function ManagerDashboard() {
               Painel de controle para gerentes
             </p>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             {/* Card de Equipe */}
@@ -111,8 +120,24 @@ export default function ManagerDashboard() {
             </div>
           </div>
 
+          {/* Seção de Status da Equipe */}
+          <div className="mt-8">
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Status da Equipe
+                </h3>
+                <div className="text-sm text-gray-500">
+                  <p>• Equipe funcionando normalmente</p>
+                  <p>• Projetos em andamento: 3</p>
+                  <p>• Relatórios pendentes: 1</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
+    </SidebarDemo>
   )
 }

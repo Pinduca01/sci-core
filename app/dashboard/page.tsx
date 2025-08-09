@@ -1,3 +1,5 @@
+'use client';
+
 import Header from '@/components/ui/header';
 import { SidebarDemo } from '@/components/ui/sidebar-demo';
 

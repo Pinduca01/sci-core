@@ -1,21 +1,30 @@
+'use client';
+
+import Header from '@/components/ui/header';
+import { SidebarDemo } from '@/components/ui/sidebar-demo';
+
 export default function UserDashboard() {
+  // Dados mockados do usuário - em produção viriam da autenticação
+  const userData = {
+    userName: 'Usuário',
+    userEmail: 'usuario@empresa.com'
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
+    <SidebarDemo>
+      <div className="flex flex-col h-full">
+        <Header userName={userData.userName} userEmail={userData.userEmail} />
+        
+        <div className="flex-1 bg-gradient-to-br from-pure-white to-fog-gray/20 p-8">
+          <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Meu Dashboard
+              Dashboard do Usuário
             </h1>
             <p className="mt-2 text-sm text-gray-600">
               Painel pessoal do usuário
             </p>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             {/* Card de Perfil */}
@@ -111,8 +120,24 @@ export default function UserDashboard() {
             </div>
           </div>
 
+          {/* Seção de Atividades Recentes */}
+          <div className="mt-8">
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Atividades Recentes
+                </h3>
+                <div className="text-sm text-gray-500">
+                  <p>• Perfil atualizado com sucesso</p>
+                  <p>• Nova tarefa atribuída</p>
+                  <p>• Notificação lida</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
+    </SidebarDemo>
   )
 }

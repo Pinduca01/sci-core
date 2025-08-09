@@ -7,7 +7,11 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-export function SidebarDemo({ children }: { children: React.ReactNode }) {
+interface SidebarDemoProps {
+  children: React.ReactNode;
+}
+
+export function SidebarDemo({ children }: SidebarDemoProps) {
   const links = [
     {
       label: "Dashboard",
