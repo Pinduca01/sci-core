@@ -97,7 +97,7 @@ export default function LoginForm() {
       return (
         <div className="w-full max-w-md mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2 font-poppins">
               Email enviado!
             </h1>
             <p className="text-gray-600">
@@ -122,7 +122,7 @@ export default function LoginForm() {
     return (
       <div className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2 font-poppins">
             Recuperar senha
           </h1>
           <p className="text-gray-600">
@@ -187,7 +187,7 @@ export default function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2 font-poppins">
           Bem-vindo(a) de volta
         </h1>
         <p className="text-gray-600">

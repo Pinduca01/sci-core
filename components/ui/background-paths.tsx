@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useMemo } from "react";
 
 function FloatingPaths({ direction }: { direction: 'clockwise' | 'counterclockwise' }) {
     // Configurações base
@@ -9,38 +10,41 @@ function FloatingPaths({ direction }: { direction: 'clockwise' | 'counterclockwi
     const baseRadius = 80;
     const pathCount = 18;
     
-    const paths = Array.from({ length: pathCount }, (_, i) => {
-        const radius = baseRadius + i * 15;
-        const angleOffset = (i * 20) * (Math.PI / 180);
-        const directionMultiplier = direction === 'clockwise' ? 1 : -1;
-        
-        // Pontos de início e fim para criar arco circular
-        const startAngle = angleOffset;
-        const endAngle = startAngle + (Math.PI * 1.2 * directionMultiplier);
-        
-        const startX = centerX + Math.cos(startAngle) * radius;
-        const startY = centerY + Math.sin(startAngle) * radius;
-        const endX = centerX + Math.cos(endAngle) * radius;
-        const endY = centerY + Math.sin(endAngle) * radius;
-        
-        // Pontos de controle para curvatura suave
-        const controlRadius = radius * 1.3;
-        const controlAngle1 = startAngle + (Math.PI * 0.4 * directionMultiplier);
-        const controlAngle2 = startAngle + (Math.PI * 0.8 * directionMultiplier);
-        
-        const controlX1 = centerX + Math.cos(controlAngle1) * controlRadius;
-        const controlY1 = centerY + Math.sin(controlAngle1) * controlRadius;
-        const controlX2 = centerX + Math.cos(controlAngle2) * controlRadius;
-        const controlY2 = centerY + Math.sin(controlAngle2) * controlRadius;
-        
-        return {
-            id: i,
-            d: `M${startX},${startY} C${controlX1},${controlY1} ${controlX2},${controlY2} ${endX},${endY}`,
-            opacity: 0.15 + (i * 0.02),
-            width: 1 + (i * 0.05),
-            delay: i * 0.1,
-        };
-    });
+    const paths = useMemo(() => {
+        return Array.from({ length: pathCount }, (_, i) => {
+            const radius = baseRadius + i * 15;
+            const angleOffset = (i * 20) * (Math.PI / 180);
+            const directionMultiplier = direction === 'clockwise' ? 1 : -1;
+            
+            // Pontos de início e fim para criar arco circular
+            const startAngle = angleOffset;
+            const endAngle = startAngle + (Math.PI * 1.2 * directionMultiplier);
+            
+            // Arredondar valores para evitar diferenças de precisão
+            const startX = Math.round((centerX + Math.cos(startAngle) * radius) * 1000) / 1000;
+            const startY = Math.round((centerY + Math.sin(startAngle) * radius) * 1000) / 1000;
+            const endX = Math.round((centerX + Math.cos(endAngle) * radius) * 1000) / 1000;
+            const endY = Math.round((centerY + Math.sin(endAngle) * radius) * 1000) / 1000;
+            
+            // Pontos de controle para curvatura suave
+            const controlRadius = radius * 1.3;
+            const controlAngle1 = startAngle + (Math.PI * 0.4 * directionMultiplier);
+            const controlAngle2 = startAngle + (Math.PI * 0.8 * directionMultiplier);
+            
+            const controlX1 = Math.round((centerX + Math.cos(controlAngle1) * controlRadius) * 1000) / 1000;
+            const controlY1 = Math.round((centerY + Math.sin(controlAngle1) * controlRadius) * 1000) / 1000;
+            const controlX2 = Math.round((centerX + Math.cos(controlAngle2) * controlRadius) * 1000) / 1000;
+            const controlY2 = Math.round((centerY + Math.sin(controlAngle2) * controlRadius) * 1000) / 1000;
+            
+            return {
+                id: i,
+                d: `M${startX},${startY} C${controlX1},${controlY1} ${controlX2},${controlY2} ${endX},${endY}`,
+                opacity: 0.15 + (i * 0.02),
+                width: 1 + (i * 0.05),
+                delay: i * 0.1,
+            };
+        });
+    }, [direction]);
 
     return (
         <svg
