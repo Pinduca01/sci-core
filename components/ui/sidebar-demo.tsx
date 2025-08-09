@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { LayoutDashboard, Siren, ClipboardList, BookOpenCheck, Activity, Car, Boxes, CalendarDays, HardHat } from "lucide-react";
+import { LayoutDashboard, Users, Siren, ClipboardList, BookOpenCheck, Activity, Car, Boxes, CalendarDays, HardHat } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,13 @@ export function SidebarDemo({ children }: SidebarDemoProps) {
       href: "/dashboard",
       icon: (
         <LayoutDashboard className="text-coal-black h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Pessoal",
+      href: "#",
+      icon: (
+        <Users className="text-coal-black h-5 w-5 flex-shrink-0" />
       ),
     },
     {
