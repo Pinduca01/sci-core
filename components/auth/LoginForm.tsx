@@ -97,7 +97,7 @@ export default function LoginForm() {
       return (
         <div className="w-full max-w-md mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-coal-black mb-2">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
               Email enviado!
             </h1>
             <p className="text-gray-600">
@@ -122,7 +122,7 @@ export default function LoginForm() {
     return (
       <div className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-coal-black mb-2">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
             Recuperar senha
           </h1>
           <p className="text-gray-600">
@@ -137,18 +137,20 @@ export default function LoginForm() {
             </div>
           )}
 
-          <div>
-            <label htmlFor="reset-email" className="block text-sm font-medium text-coal-black mb-2">
+          <div className="space-y-1">
+            <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-gray-400" />
+              </div>
               <input
                 id="reset-email"
                 type="email"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
-                className="form-input pl-10"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 placeholder-gray-400"
                 placeholder="Digite seu email"
                 disabled={isLoading}
               />
@@ -173,7 +175,7 @@ export default function LoginForm() {
               setIsResetMode(false)
               setError(null)
             }}
-            className="w-full text-gray-600 hover:text-coal-black transition-colors"
+            className="w-full text-gray-600 hover:text-gray-800 transition-colors"
           >
             Voltar ao login
           </button>
@@ -185,7 +187,7 @@ export default function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-coal-black mb-2">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">
           Bem-vindo(a) de volta
         </h1>
         <p className="text-gray-600">
@@ -200,47 +202,53 @@ export default function LoginForm() {
           </div>
         )}
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-coal-black mb-2">
+        <div className="space-y-1">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Mail className="h-5 w-5 text-gray-400" />
+            </div>
             <input
               id="email"
               type="email"
               value={credentials.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              className="form-input pl-10"
+              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 placeholder-gray-400"
               placeholder="Digite seu email"
               disabled={isLoading}
             />
           </div>
         </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-coal-black mb-2">
+        <div className="space-y-1">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Senha
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Lock className="h-5 w-5 text-gray-400" />
+            </div>
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
               value={credentials.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
-              className="form-input pl-10 pr-10"
+              className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 placeholder-gray-400"
               placeholder="Digite sua senha"
               disabled={isLoading}
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              disabled={isLoading}
-            >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200 focus:outline-none"
+                disabled={isLoading}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
         </div>
 

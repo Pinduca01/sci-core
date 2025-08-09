@@ -46,22 +46,48 @@ export async function resetPasswordForEmail(email: string) {
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfile> {
+  // Primeiro, tentar usar a função RPC que criamos
+  try {
+    const { data: profileData, error: rpcError } = await supabase
+      .rpc('get_user_profile')
+    
+    if (!rpcError && profileData && profileData.length > 0) {
+      return {
+        id: profileData[0].id,
+        email: profileData[0].email,
+        role: profileData[0].role
+      }
+    }
+  } catch (rpcError) {
+    console.warn('Erro ao usar RPC get_user_profile:', rpcError)
+  }
+
+  // Fallback: buscar diretamente na tabela profiles
   const { data, error } = await supabase
-    .from(authConfig.profileSource)
+    .from('profiles')
     .select('id, email, role')
     .eq('id', userId)
     .single()
 
   if (error) {
-    throw new AuthError('Erro ao buscar perfil do usuário', error.code)
+    console.error('Erro detalhado:', error)
+    throw new AuthError(`Erro ao buscar perfil do usuário: ${error.message}`, error.code)
+  }
+
+  if (!data) {
+    throw new AuthError('Perfil do usuário não encontrado', 'PROFILE_NOT_FOUND')
   }
 
   return data
 }
 
 export function getRedirectPathByRole(role: string): string {
-  // TODO: Expandir mapeamento conforme necessário
+  // Mapeamento atualizado para as roles que configuramos no Supabase
   const rolePathMap: { [key: string]: string } = {
+    'admin': '/dashboard/admin',
+    'manager': '/dashboard/manager', 
+    'user': '/dashboard/user',
+    // Manter compatibilidade com roles antigas se existirem
     'GS': '/dashboard/admin',
     'BA_CE': '/dashboard/team-lead',
     'ANALYST': '/dashboard/analyst',

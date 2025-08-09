@@ -2,54 +2,27 @@
 
 import { useEffect, useState } from 'react'
 import LoginForm from '@/components/auth/LoginForm'
+import { BackgroundPaths } from '@/components/ui/background-paths'
 
 export default function LoginPage() {
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const leftColumn = document.querySelector('.left-column') as HTMLElement
-      if (!leftColumn) return
-
-      const rect = leftColumn.getBoundingClientRect()
-      const x = ((e.clientX - rect.left) / rect.width) * 100
-      const y = ((e.clientY - rect.top) / rect.height) * 100
-
-      setMousePosition({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) })
-    }
-
-    const leftColumn = document.querySelector('.left-column')
-    if (leftColumn) {
-      leftColumn.addEventListener('mousemove', handleMouseMove as EventListener)
-      return () => leftColumn.removeEventListener('mousemove', handleMouseMove as EventListener)
-    }
-  }, [])
-
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen bg-gray-100 flex relative overflow-hidden">
+      {/* Background Paths Component */}
+      <BackgroundPaths />
+      
       {/* Coluna Esquerda - Área Visual */}
       <div 
-        className="left-column hidden md:flex md:w-[45%] lg:w-[50%] relative spotlight-container gradient-bg"
-        style={{
-          '--mx': `${mousePosition.x}%`,
-          '--my': `${mousePosition.y}%`,
-        } as React.CSSProperties}
+        className="left-column hidden md:flex md:w-[45%] lg:w-[50%] relative z-10"
       >
-        {/* Overlay do efeito spotlight */}
-        <div className="spotlight-overlay" />
-        
-        {/* Camada de ruído sutil (opcional) */}
-        <div 
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          }}
-        />
+        {/* Conteúdo da coluna esquerda removido para focar no BackgroundPaths */}
       </div>
 
       {/* Coluna Direita - Formulário */}
-      <div className="w-full md:w-[55%] lg:w-[50%] bg-pure-white flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+      <div className="w-full md:w-[55%] lg:w-[50%] flex items-center justify-center p-8 relative z-10">
+        {/* Overlay para criar opacidade na área do formulário */}
+        <div className="absolute inset-0 bg-white/20"></div>
+        
+        <div className="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 p-8 relative z-20">
           <LoginForm />
         </div>
       </div>
