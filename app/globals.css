@@ -1,0 +1,154 @@
+/* Import Tailwind base styles */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --radiant-orange: #FF4F18;
+  --pure-white: #FFFFFF;
+  --fog-gray: #F2F4F7;
+  --coal-black: #141517;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+body {
+  color: var(--coal-black);
+  background: var(--pure-white);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Gradient Background Animation */
+.gradient-bg {
+  background: linear-gradient(
+    135deg,
+    #FF4F18 0%,
+    #FF6B3D 25%,
+    #FFA366 50%,
+    #FFD4B8 75%,
+    #FFFFFF 100%
+  );
+  background-size: 400% 400%;
+  animation: gradient-shift 25s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Spotlight Effect */
+.spotlight-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  mask-image: radial-gradient(
+    circle 240px at var(--mx, 50%) var(--my, 50%),
+    transparent 0%,
+    black 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle 240px at var(--mx, 50%) var(--my, 50%),
+    transparent 0%,
+    black 100%
+  );
+  transition: mask-position 0.1s ease-out;
+  pointer-events: none;
+}
+
+/* Form Styles */
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: all 150ms;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--radiant-orange);
+  box-shadow: 0 0 0 3px rgba(255, 79, 24, 0.1);
+}
+
+.btn-primary {
+  background-color: var(--radiant-orange);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 150ms;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(255, 79, 24, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error Animation */
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .spotlight-overlay {
+    display: none;
+  }
+}

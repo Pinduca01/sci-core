@@ -1,0 +1,87 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradientes laranjados abstratos -->
+  <defs>
+    <linearGradient id="mainOrangeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="25%" style="stop-color:#fff7ed;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#fed7aa;stop-opacity:1" />
+      <stop offset="75%" style="stop-color:#fb923c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
+    </linearGradient>
+    
+    <radialGradient id="orangeGlow" cx="30%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.9" />
+      <stop offset="30%" style="stop-color:#fed7aa;stop-opacity:0.7" />
+      <stop offset="60%" style="stop-color:#fb923c;stop-opacity:0.5" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:0.3" />
+    </radialGradient>
+    
+    <radialGradient id="orangeSecondary" cx="70%" cy="60%" r="50%">
+      <stop offset="0%" style="stop-color:#fff7ed;stop-opacity:0.8" />
+      <stop offset="40%" style="stop-color:#fed7aa;stop-opacity:0.6" />
+      <stop offset="80%" style="stop-color:#fb923c;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:0.2" />
+    </radialGradient>
+    
+    <linearGradient id="abstractOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fb923c;stop-opacity:0.4" />
+      <stop offset="50%" style="stop-color:#fed7aa;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#fff7ed;stop-opacity:0.2" />
+    </linearGradient>
+    
+    <linearGradient id="waveOrange" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ea580c;stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:#fb923c;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#fed7aa;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fundo principal laranjado -->
+  <rect width="1920" height="1080" fill="url(#mainOrangeGradient)"/>
+  
+  <!-- Formas abstratas orgânicas laranjadas -->
+  <path d="M0,0 Q400,200 800,150 Q1200,100 1600,200 Q1800,300 1920,250 L1920,0 Z" 
+        fill="url(#orangeGlow)" opacity="0.7"/>
+  
+  <path d="M0,300 Q500,200 1000,350 Q1400,500 1800,400 T1920,450 L1920,700 Q1600,600 1200,650 Q800,700 400,600 T0,650 Z" 
+        fill="url(#orangeSecondary)" opacity="0.6"/>
+  
+  <path d="M0,600 Q600,500 1200,550 Q1600,600 1920,500 L1920,1080 L0,1080 Z" 
+        fill="url(#abstractOrange)" opacity="0.5"/>
+  
+  <!-- Círculos abstratos laranjados -->
+  <circle cx="300" cy="200" r="150" fill="url(#orangeGlow)" opacity="0.4"/>
+  <circle cx="1600" cy="300" r="120" fill="url(#orangeSecondary)" opacity="0.3"/>
+  <circle cx="800" cy="600" r="100" fill="url(#abstractOrange)" opacity="0.5"/>
+  <circle cx="1200" cy="800" r="80" fill="url(#orangeGlow)" opacity="0.3"/>
+  <circle cx="400" cy="900" r="90" fill="url(#orangeSecondary)" opacity="0.4"/>
+  
+  <!-- Formas geométricas abstratas laranjadas -->
+  <ellipse cx="200" cy="400" rx="180" ry="120" fill="#fb923c" opacity="0.2" transform="rotate(35 200 400)"/>
+  <ellipse cx="1500" cy="200" rx="200" ry="100" fill="#fed7aa" opacity="0.3" transform="rotate(-25 1500 200)"/>
+  <ellipse cx="1000" cy="800" rx="160" ry="90" fill="#ea580c" opacity="0.2" transform="rotate(55 1000 800)"/>
+  <ellipse cx="600" cy="300" rx="140" ry="80" fill="#fff7ed" opacity="0.4" transform="rotate(-45 600 300)"/>
+  
+  <!-- Ondas fluidas laranjadas -->
+  <path d="M0,150 Q480,100 960,180 Q1440,260 1920,200 L1920,350 Q1440,300 960,320 Q480,340 0,280 Z" 
+        fill="url(#waveOrange)" opacity="0.4"/>
+  
+  <path d="M0,450 Q640,400 1280,480 T1920,450 L1920,600 Q1280,550 640,580 T0,600 Z" 
+        fill="url(#abstractOrange)" opacity="0.3"/>
+  
+  <!-- Elementos de textura laranjada -->
+  <path d="M0,750 Q320,700 640,730 Q960,760 1280,720 Q1600,680 1920,720 L1920,900 Q1600,860 1280,880 Q960,900 640,870 Q320,840 0,880 Z" 
+        fill="#fed7aa" opacity="0.2"/>
+  
+  <!-- Pontos de luz laranjados -->
+  <circle cx="150" cy="150" r="4" fill="#ea580c" opacity="0.7"/>
+  <circle cx="1750" cy="200" r="3" fill="#fb923c" opacity="0.6"/>
+  <circle cx="900" cy="400" r="5" fill="#fed7aa" opacity="0.8"/>
+  <circle cx="1300" cy="700" r="3" fill="#ea580c" opacity="0.5"/>
+  <circle cx="500" cy="800" r="4" fill="#fb923c" opacity="0.6"/>
+  <circle cx="700" cy="100" r="2" fill="#fed7aa" opacity="0.7"/>
+  <circle cx="1100" cy="500" r="3" fill="#ea580c" opacity="0.6"/>
+  
+  <!-- Overlay branco sutil para suavizar -->
+  <rect width="1920" height="1080" fill="url(#mainOrangeGradient)" opacity="0.1"/>
+</svg>
