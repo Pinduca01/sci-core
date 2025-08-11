@@ -4,7 +4,8 @@ import Header from '@/components/ui/header';
 import { SidebarDemo } from '@/components/ui/sidebar-demo';
 import { useState, useEffect } from 'react';
 import { Search, Filter, FileText, Shield, Car, Flame, Users, Edit, X, Phone, Mail, MapPin, Calendar, DollarSign, Plus, Upload, Trash2, UserPlus, Eye, Zap, Wrench, Heart, Star, Award } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { TbSteeringWheel, TbAxe, TbShield, TbClipboard, TbFireExtinguisher } from 'react-icons/tb';
+import { supabase, uploadDocumento, getDocumentosBombeiro, deleteDocumento, getDocumentoUrl, DocumentoUpload } from '@/lib/supabase';
 
 // Tipos para os dados
 interface Bombeiro {
@@ -19,6 +20,7 @@ interface Bombeiro {
   dataAdmissao: string;
   documentos: number;
   ferista: boolean;
+  equipe: 'Alfa' | 'Bravo' | 'Charlie' | 'Delta';
 }
 
 // Interface para arquivos com nomes personalizados
@@ -40,7 +42,8 @@ const bombeirosMock: Bombeiro[] = [
     endereco: 'Rua das Flores, 123 - Centro',
     dataAdmissao: '15/03/2020',
     documentos: 12,
-    ferista: false
+    ferista: false,
+    equipe: 'Alfa'
   },
   {
     id: 2,
@@ -53,7 +56,8 @@ const bombeirosMock: Bombeiro[] = [
     endereco: 'Av. Principal, 456 - Jardim',
     dataAdmissao: '22/08/2019',
     documentos: 8,
-    ferista: true
+    ferista: true,
+    equipe: 'Bravo'
   },
   {
     id: 3,
@@ -66,7 +70,8 @@ const bombeirosMock: Bombeiro[] = [
     endereco: 'Rua da Paz, 789 - Vila Nova',
     dataAdmissao: '10/01/2021',
     documentos: 15,
-    ferista: false
+    ferista: false,
+    equipe: 'Charlie'
   },
   {
     id: 4,
@@ -79,7 +84,8 @@ const bombeirosMock: Bombeiro[] = [
     endereco: 'Rua do Sol, 321 - Centro',
     dataAdmissao: '05/11/2018',
     documentos: 10,
-    ferista: true
+    ferista: true,
+    equipe: 'Delta'
   },
   {
     id: 5,
@@ -92,7 +98,8 @@ const bombeirosMock: Bombeiro[] = [
     endereco: 'Av. das Nações, 654 - Bairro Alto',
     dataAdmissao: '18/06/2022',
     documentos: 6,
-    ferista: false
+    ferista: false,
+    equipe: 'Alfa'
   }
 ];
 
@@ -109,8 +116,15 @@ export default function PessoalPage() {
   const [isDocListModalOpen, setIsDocListModalOpen] = useState(false);
   const [selectedBombeiroForDocs, setSelectedBombeiroForDocs] = useState<Bombeiro | null>(null);
   const [pendingFiles, setPendingFiles] = useState<FileWithCustomName[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<{[key: number]: FileWithCustomName[]}>({});
+  const [uploadedFiles, setUploadedFiles] = useState<{[key: number]: DocumentoUpload[]}>({});
   const [fileNames, setFileNames] = useState<{[key: number]: string}>({});
+  const [isUploading, setIsUploading] = useState(false);
+  
+  // Estados para edição
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editBombeiro, setEditBombeiro] = useState<Partial<Bombeiro>>({});
+  const [isConfirmEquipeModalOpen, setIsConfirmEquipeModalOpen] = useState(false);
+  const [newEquipe, setNewEquipe] = useState<'Alfa' | 'Bravo' | 'Charlie' | 'Delta'>('Alfa');
   
   // Estado para notificação
   const [notification, setNotification] = useState<{
@@ -133,14 +147,55 @@ export default function PessoalPage() {
     endereco: '',
     dataAdmissao: '',
     documentos: 0,
-    ferista: false
+    ferista: false,
+    equipe: 'Alfa'
   });
 
-  // Dados mockados do usuário
-  const userData = {
-    userName: 'Usuário',
-    userEmail: 'usuario@empresa.com'
-  };
+  // Estado para dados do usuário
+  const [userData, setUserData] = useState({
+    userName: 'Carregando...',
+    userEmail: 'carregando@...'
+  });
+
+  // Carregar dados do usuário autenticado
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Buscar dados do perfil do usuário
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', user.id)
+            .single();
+
+          if (error) {
+            console.error('Erro ao carregar perfil:', error);
+            // Usar dados básicos do auth se não encontrar perfil
+            setUserData({
+              userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+              userEmail: user.email || 'email@exemplo.com'
+            });
+          } else {
+            setUserData({
+              userName: profile.full_name || user.email?.split('@')[0] || 'Usuário',
+              userEmail: profile.email || user.email || 'email@exemplo.com'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do usuário:', error);
+        setUserData({
+          userName: 'Usuário',
+          userEmail: 'usuario@empresa.com'
+        });
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   // Carregar bombeiros do Supabase na inicialização
   useEffect(() => {
@@ -167,11 +222,16 @@ export default function PessoalPage() {
           email: item.email,
           endereco: item.endereco,
           dataAdmissao: new Date(item.data_admissao).toLocaleDateString('pt-BR'),
-          documentos: item.documentos,
-          ferista: item.ferista
+          documentos: 0, // Inicializar com 0 para evitar números fictícios
+          ferista: item.ferista,
+          equipe: item.equipe as 'Alfa' | 'Bravo' | 'Charlie' | 'Delta' || 'Alfa'
         }));
 
-        setBombeiros(bombeirosList);
+        // Não definir bombeiros ainda - aguardar contagem real
+        // setBombeiros(bombeirosList);
+        
+        // Carregar documentos para cada bombeiro e definir estado apenas uma vez
+        await loadAllDocuments(bombeirosList);
       } catch (error) {
         console.error('Erro inesperado ao carregar bombeiros:', error);
       }
@@ -180,26 +240,89 @@ export default function PessoalPage() {
     loadBombeiros();
   }, []);
 
+  // Carregar documentos de todos os bombeiros
+  const loadAllDocuments = async (bombeirosList: Bombeiro[]) => {
+    const documentsMap: {[key: number]: DocumentoUpload[]} = {};
+    const updatedBombeiros: Bombeiro[] = [];
+    
+    for (const bombeiro of bombeirosList) {
+      const { data: documentos } = await getDocumentosBombeiro(bombeiro.id);
+      if (documentos) {
+        documentsMap[bombeiro.id] = documentos;
+        // Atualizar contador de documentos com o valor real
+        updatedBombeiros.push({
+          ...bombeiro,
+          documentos: documentos.length
+        });
+      } else {
+        // Se não há documentos, manter o bombeiro com contador 0
+        updatedBombeiros.push({
+          ...bombeiro,
+          documentos: 0
+        });
+      }
+    }
+    
+    setUploadedFiles(documentsMap);
+    // Atualizar os bombeiros com a contagem real de documentos
+    setBombeiros(updatedBombeiros);
+  };
+
+  // Carregar documentos de um bombeiro específico
+  const loadBombeiroDocuments = async (bombeiroId: number) => {
+    const { data: documentos, error } = await getDocumentosBombeiro(bombeiroId);
+    if (error) {
+      console.error('Erro ao carregar documentos:', error);
+      showNotification('Erro ao carregar documentos', 'error');
+      return;
+    }
+    
+    if (documentos) {
+      setUploadedFiles(prev => ({
+        ...prev,
+        [bombeiroId]: documentos
+      }));
+      
+      // Atualizar contador de documentos do bombeiro
+      setBombeiros(prev => prev.map(b => 
+        b.id === bombeiroId 
+          ? { ...b, documentos: documentos.length }
+          : b
+      ));
+    }
+  };
+
   // Função para obter ícone da função
   const getFuncaoIcon = (funcao: string) => {
     switch (funcao) {
-      case 'BA-GS': return <Shield className="w-5 h-5 text-blue-600" />;
-      case 'BA-CE': return <Zap className="w-5 h-5 text-emerald-600" />;
-      case 'BA-LR': return <Flame className="w-5 h-5 text-red-600" />;
-      case 'BA-MC': return <Heart className="w-5 h-5 text-pink-600" />;
-      case 'BA-2': return <Star className="w-5 h-5 text-amber-600" />;
+      case 'BA-GS': return <TbClipboard className="w-5 h-5 text-black" />;
+      case 'BA-CE': return <TbShield className="w-5 h-5 text-black" />;
+      case 'BA-LR': return <TbAxe className="w-5 h-5 text-black" />;
+      case 'BA-MC': return <TbSteeringWheel className="w-5 h-5 text-black" />;
+      case 'BA-2': return <TbFireExtinguisher className="w-5 h-5 text-black" />;
       default: return <Award className="w-5 h-5 text-gray-600" />;
     }
   };
 
-  // Função para obter cor do status
+  // Função para obter cor da equipe - Cores sólidas sem bordas
+  const getEquipeColor = (equipe: string) => {
+    switch (equipe) {
+      case 'Alfa': return 'bg-blue-100 text-blue-900';
+      case 'Bravo': return 'bg-red-100 text-red-900';
+      case 'Charlie': return 'bg-orange-100 text-orange-900';
+      case 'Delta': return 'bg-purple-100 text-purple-900';
+      default: return 'bg-gray-100 text-gray-900';
+    }
+  };
+
+  // Função para obter cor do status - Cores sólidas sem bordas
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Ativo': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Férias': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Afastado': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Licença': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'Ativo': return 'bg-green-200 text-green-900';
+      case 'Férias': return 'bg-sky-200 text-sky-900';
+      case 'Afastado': return 'bg-yellow-200 text-yellow-900';
+      case 'Licença': return 'bg-pink-200 text-pink-900';
+      default: return 'bg-slate-200 text-slate-900';
     }
   };
 
@@ -243,7 +366,8 @@ export default function PessoalPage() {
       endereco: '',
       dataAdmissao: '',
       documentos: 0,
-      ferista: false
+      ferista: false,
+      equipe: 'Alfa'
     });
   };
 
@@ -272,7 +396,8 @@ export default function PessoalPage() {
         endereco: newBombeiro.endereco || '',
         data_admissao: newBombeiro.dataAdmissao || new Date().toISOString().split('T')[0],
         documentos: newBombeiro.documentos || 0,
-        ferista: newBombeiro.ferista || false
+        ferista: newBombeiro.ferista || false,
+        equipe: newBombeiro.equipe || 'Alfa'
       };
 
       console.log('Dados preparados para o Supabase:', bombeiroData);
@@ -305,7 +430,8 @@ export default function PessoalPage() {
         endereco: data.endereco,
         dataAdmissao: new Date(data.data_admissao).toLocaleDateString('pt-BR'),
         documentos: data.documentos,
-        ferista: data.ferista
+        ferista: data.ferista,
+        equipe: data.equipe as 'Alfa' | 'Bravo' | 'Charlie' | 'Delta' || 'Alfa'
       };
 
       console.log('Bombeiro convertido para adicionar:', bombeiroToAdd);
@@ -340,10 +466,123 @@ export default function PessoalPage() {
     setNewBombeiro(prev => ({ ...prev, [field]: value }));
   };
 
+  // Funções para modal de edição
+  const openEditModal = (bombeiro: Bombeiro) => {
+    setEditBombeiro({ ...bombeiro });
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditBombeiro({});
+  };
+
+  // Atualizar campo do bombeiro em edição
+  const updateEditBombeiroField = (field: keyof Bombeiro, value: any) => {
+    setEditBombeiro(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Função para salvar edições
+  const saveEditBombeiro = async () => {
+    if (!editBombeiro.id) return;
+
+    try {
+      // Preparar dados para o Supabase
+      const bombeiroData = {
+        nome: editBombeiro.nome,
+        funcao: editBombeiro.funcao,
+        matricula: editBombeiro.matricula,
+        status: editBombeiro.status,
+        telefone: editBombeiro.telefone,
+        email: editBombeiro.email,
+        endereco: editBombeiro.endereco,
+        data_admissao: editBombeiro.dataAdmissao ? new Date(editBombeiro.dataAdmissao.split('/').reverse().join('-')).toISOString().split('T')[0] : undefined,
+        ferista: editBombeiro.ferista,
+        equipe: editBombeiro.equipe
+      };
+
+      // Atualizar no Supabase
+      const { error } = await supabase
+        .from('bombeiros')
+        .update(bombeiroData)
+        .eq('id', editBombeiro.id);
+
+      if (error) {
+        console.error('Erro ao atualizar bombeiro:', error);
+        showNotification('Erro ao atualizar bombeiro: ' + error.message, 'error');
+        return;
+      }
+
+      // Atualizar estado local
+      setBombeiros(prev => prev.map(b => 
+        b.id === editBombeiro.id ? { ...editBombeiro as Bombeiro } : b
+      ));
+
+      // Atualizar bombeiro selecionado se for o mesmo
+      if (selectedBombeiro?.id === editBombeiro.id) {
+        setSelectedBombeiro(editBombeiro as Bombeiro);
+      }
+
+      closeEditModal();
+      showNotification(`Bombeiro ${editBombeiro.nome} atualizado com sucesso!`, 'success');
+
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      showNotification('Erro inesperado ao atualizar bombeiro.', 'error');
+    }
+  };
+
+  // Função para abrir modal de confirmação de mudança de equipe
+  const openConfirmEquipeModal = (novaEquipe: 'Alfa' | 'Bravo' | 'Charlie' | 'Delta') => {
+    setNewEquipe(novaEquipe);
+    setIsConfirmEquipeModalOpen(true);
+  };
+
+  // Função para confirmar mudança de equipe
+  const confirmEquipeChange = async () => {
+    if (!editBombeiro.id) return;
+
+    try {
+      // Atualizar no Supabase
+      const { error } = await supabase
+        .from('bombeiros')
+        .update({ equipe: newEquipe })
+        .eq('id', editBombeiro.id);
+
+      if (error) {
+        console.error('Erro ao atualizar equipe:', error);
+        showNotification('Erro ao atualizar equipe: ' + error.message, 'error');
+        return;
+      }
+
+      // Atualizar estado local
+      setBombeiros(prev => prev.map(b => 
+        b.id === editBombeiro.id ? { ...b, equipe: newEquipe } : b
+      ));
+
+      // Atualizar bombeiro em edição
+      setEditBombeiro(prev => ({ ...prev, equipe: newEquipe }));
+
+      // Atualizar bombeiro selecionado se for o mesmo
+      if (selectedBombeiro?.id === editBombeiro.id) {
+        setSelectedBombeiro(prev => prev ? { ...prev, equipe: newEquipe } : null);
+      }
+
+      setIsConfirmEquipeModalOpen(false);
+      showNotification(`Equipe alterada para ${newEquipe} com sucesso!`, 'success');
+
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      showNotification('Erro inesperado ao atualizar equipe.', 'error');
+    }
+  };
+
   // Abrir modal de documentos
   const openDocModal = (bombeiro: Bombeiro) => {
     setSelectedBombeiroForDocs(bombeiro);
     setIsDocModalOpen(true);
+    // Carregar documentos atualizados quando abrir o modal
+    loadBombeiroDocuments(bombeiro.id);
   };
 
   // Fechar modal de documentos
@@ -378,6 +617,8 @@ export default function PessoalPage() {
   const openDocumentsModal = (bombeiro: Bombeiro) => {
     setSelectedBombeiroForDocs(bombeiro);
     setIsDocListModalOpen(true);
+    // Carregar documentos atualizados
+    loadBombeiroDocuments(bombeiro.id);
   };
 
   // Função para upload de arquivos
@@ -420,57 +661,84 @@ export default function PessoalPage() {
     }));
   };
 
-  // Nova função para enviar arquivos
-  const sendFiles = () => {
-    if (pendingFiles.length > 0 && selectedBombeiroForDocs) {
-      // Adicionar timestamp para ordenação e nomes personalizados
-      const filesWithTimestamp = pendingFiles.map((file, index) => ({
-        ...file,
-        customName: fileNames[index] || file.customName || file.name,
-        uploadTime: new Date().getTime()
-      }));
+  // Nova função para enviar arquivos para o Supabase
+  const sendFiles = async () => {
+    if (pendingFiles.length === 0 || !selectedBombeiroForDocs) {
+      showNotification('Nenhum arquivo selecionado', 'error');
+      return;
+    }
+
+    setIsUploading(true);
+    
+    try {
+      const uploadPromises = pendingFiles.map(async (file, index) => {
+        const nomePersonalizado = fileNames[index] || file.customName || file.name;
+        return await uploadDocumento(selectedBombeiroForDocs.id, file, nomePersonalizado);
+      });
+
+      const results = await Promise.all(uploadPromises);
       
-      setUploadedFiles(prev => ({
-        ...prev,
-        [selectedBombeiroForDocs.id]: [...(prev[selectedBombeiroForDocs.id] || []), ...filesWithTimestamp]
-      }));
-      
-      // Atualizar contador de documentos do bombeiro
-      setBombeiros(prev => prev.map(b => 
-        b.id === selectedBombeiroForDocs.id 
-          ? { ...b, documentos: (uploadedFiles[selectedBombeiroForDocs.id]?.length || 0) + pendingFiles.length }
-          : b
-      ));
+      // Verificar se houve erros
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('Erros no upload:', errors.map(err => ({
+          message: typeof err.error === 'object' && err.error !== null && 'message' in err.error ? (err.error.message || 'Erro desconhecido') : 'Erro desconhecido',
+          details: err.error
+        })));
+        
+        // Mostrar detalhes específicos dos erros
+        const errorMessages = errors.map(err => 
+          typeof err.error === 'object' && err.error !== null && 'message' in err.error 
+            ? (err.error.message || 'Erro desconhecido') 
+            : 'Erro desconhecido'
+        ).join(', ');
+        showNotification(`Erro ao enviar ${errors.length} arquivo(s): ${errorMessages}`, 'error');
+      } else {
+        showNotification(`${results.length} arquivo(s) enviado(s) com sucesso!`, 'success');
+      }
+
+      // Recarregar documentos do bombeiro
+      await loadBombeiroDocuments(selectedBombeiroForDocs.id);
       
       // Limpar arquivos pendentes e fechar modal de upload
       setPendingFiles([]);
       setFileNames({});
       setIsDocModalOpen(false);
       
-      // Abrir modal de listagem
-      setIsDocListModalOpen(true);
+      // Abrir modal de listagem se houver sucesso
+      if (errors.length === 0) {
+        setIsDocListModalOpen(true);
+      }
+      
+    } catch (error) {
+      console.error('Erro inesperado no upload:', error);
+      showNotification('Erro inesperado ao enviar arquivos', 'error');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  // Remover arquivo
-  const removeFile = (fileIndex: number) => {
-    if (selectedBombeiroForDocs) {
-      setUploadedFiles(prev => {
-        const currentFiles = prev[selectedBombeiroForDocs.id] || [];
-        const updatedFiles = currentFiles.filter((_, index) => index !== fileIndex);
-        
-        // Atualizar contador de documentos
-        setBombeiros(prevBombeiros => prevBombeiros.map(b => 
-          b.id === selectedBombeiroForDocs.id 
-            ? { ...b, documentos: updatedFiles.length }
-            : b
-        ));
-        
-        return {
-          ...prev,
-          [selectedBombeiroForDocs.id]: updatedFiles
-        };
-      });
+  // Remover arquivo do Supabase
+  const removeFile = async (documento: DocumentoUpload, fileIndex: number) => {
+    if (!selectedBombeiroForDocs || !documento.id) return;
+
+    try {
+      const { error } = await deleteDocumento(documento.id, documento.caminho_storage);
+      
+      if (error) {
+        console.error('Erro ao remover documento:', error);
+        showNotification('Erro ao remover documento', 'error');
+        return;
+      }
+
+      showNotification('Documento removido com sucesso', 'success');
+      
+      // Recarregar documentos do bombeiro
+      await loadBombeiroDocuments(selectedBombeiroForDocs.id);
+      
+    } catch (error) {
+      console.error('Erro inesperado ao remover documento:', error);
+      showNotification('Erro inesperado ao remover documento', 'error');
     }
   };
 
@@ -484,17 +752,20 @@ export default function PessoalPage() {
   };
 
   // Função para visualizar documento
-  const viewDocument = (file: FileWithCustomName) => {
-    // Criar URL temporária para o arquivo
-    const fileURL = URL.createObjectURL(file);
-    
-    // Abrir em nova aba
-    window.open(fileURL, '_blank');
-    
-    // Limpar URL após um tempo para liberar memória
-    setTimeout(() => {
-      URL.revokeObjectURL(fileURL);
-    }, 1000);
+  const viewDocument = async (documento: DocumentoUpload) => {
+    try {
+      const url = await getDocumentoUrl(documento.caminho_storage);
+      if (url) {
+        if (url?.data?.signedUrl) {
+          window.open(url.data.signedUrl, '_blank');
+        }
+      } else {
+        showNotification('Erro ao gerar URL do documento', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao visualizar documento:', error);
+      showNotification('Erro ao visualizar documento', 'error');
+    }
   };
 
   // Função para obter ícone do tipo de arquivo
@@ -520,6 +791,7 @@ export default function PessoalPage() {
   return (
     <SidebarDemo>
       <div className="flex flex-col h-full">
+
         <Header userName={userData.userName} userEmail={userData.userEmail} />
         
         <div className="flex-1 bg-fog-gray/30 overflow-auto min-h-screen">
@@ -601,51 +873,63 @@ export default function PessoalPage() {
                 <table className="w-full">
                   <thead className="bg-fog-gray/20">
                     <tr>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Nome</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Função</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Matrícula</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Status</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Documentos</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-coal-black uppercase tracking-wider">Nome</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-coal-black uppercase tracking-wider">Função</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-coal-black uppercase tracking-wider">Equipe</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-coal-black uppercase tracking-wider">Matrícula</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-coal-black uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-coal-black uppercase tracking-wider">Docs</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-fog-gray/20">
+                  <tbody className="divide-y divide-fog-gray/10">
                     {filteredBombeiros.map((bombeiro) => (
                       <tr 
                         key={bombeiro.id}
                         onClick={() => openModal(bombeiro)}
-                        className="hover:bg-fog-gray/10 cursor-pointer transition-colors"
+                        className={`hover:bg-fog-gray/5 cursor-pointer transition-all duration-200 group ${bombeiro.ferista ? 'bg-orange-50/30' : ''}`}
                       >
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-coal-black">{bombeiro.nome}</div>
-                        </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            {getFuncaoIcon(bombeiro.funcao)}
-                            <span className="font-medium text-coal-black">{bombeiro.funcao}</span>
+                            <div className="font-medium text-coal-black text-sm group-hover:text-radiant-orange transition-colors">
+                              {bombeiro.nome}
+                            </div>
                             {bombeiro.ferista && (
-                              <div className="bg-yellow-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                F
+                              <div className="relative">
+                                <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse shadow-sm" title="Ferista"></div>
                               </div>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="font-mono text-coal-black">{bombeiro.matricula}</span>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-shrink-0">
+                              {getFuncaoIcon(bombeiro.funcao)}
+                            </div>
+                            <span className="font-medium text-coal-black text-sm">{bombeiro.funcao}</span>
+                          </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(bombeiro.status)}`}>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium border ${getEquipeColor(bombeiro.equipe)}`}>
+                            {bombeiro.equipe}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-coal-black/80 text-sm">{bombeiro.matricula}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium border ${getStatusColor(bombeiro.status)}`}>
                             {bombeiro.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               openDocModal(bombeiro);
                             }}
-                            className="flex items-center gap-1 text-radiant-orange hover:text-radiant-orange/80 transition-colors"
+                            className="flex items-center gap-1 text-coal-black/60 hover:text-radiant-orange transition-colors group/btn"
                           >
-                            <FileText className="w-4 h-4" />
+                            <FileText className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
                             <span className="text-sm font-medium">{bombeiro.documentos}</span>
                           </button>
                         </td>
@@ -691,10 +975,13 @@ export default function PessoalPage() {
                   </button>
                 </div>
                 
-                {/* Status Badge */}
-                <div className="mt-6">
-                  <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium text-pure-white ${getStatusColor(selectedBombeiro.status)} bg-white/20 backdrop-blur-sm border border-white/30`}>
+                {/* Status e Equipe Badges */}
+                <div className="mt-6 flex items-center gap-3">
+                  <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(selectedBombeiro.status)}`}>
                     {selectedBombeiro.status}
+                  </span>
+                  <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getEquipeColor(selectedBombeiro.equipe)}`}>
+                    Equipe {selectedBombeiro.equipe}
                   </span>
                 </div>
               </div>
@@ -781,7 +1068,10 @@ export default function PessoalPage() {
                   >
                     Fechar
                   </button>
-                  <button className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-radiant-orange to-radiant-orange/80 text-pure-white rounded-xl hover:from-radiant-orange/90 hover:to-radiant-orange/70 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold">
+                  <button 
+                    onClick={() => openEditModal(selectedBombeiro)}
+                    className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-radiant-orange to-radiant-orange/80 text-pure-white rounded-xl hover:from-radiant-orange/90 hover:to-radiant-orange/70 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
+                  >
                     <Edit className="w-5 h-5" />
                     Editar
                   </button>
@@ -892,6 +1182,21 @@ export default function PessoalPage() {
                         <option value="BA-LR">BA-LR</option>
                         <option value="BA-MC">BA-MC</option>
                         <option value="BA-2">BA-2</option>
+                      </select>
+                    </div>
+
+                    {/* Equipe */}
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Equipe</label>
+                      <select
+                        value={newBombeiro.equipe || 'Alfa'}
+                        onChange={(e) => updateNewBombeiroField('equipe', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                      >
+                        <option value="Alfa">Equipe Alfa</option>
+                        <option value="Bravo">Equipe Bravo</option>
+                        <option value="Charlie">Equipe Charlie</option>
+                        <option value="Delta">Equipe Delta</option>
                       </select>
                     </div>
 
@@ -1008,34 +1313,38 @@ export default function PessoalPage() {
                 ) : (
                   <div className="space-y-2">
                     {(uploadedFiles[selectedBombeiroForDocs.id] || [])
-                      .sort((a, b) => (b.uploadTime || 0) - (a.uploadTime || 0))
-                      .map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                      .sort((a, b) => {
+                        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                        const dateB = b.data_criacao ? new Date(b.data_criacao).getTime() : 0;
+                        return dateB - dateA;
+                      })
+                      .map((documento, index) => (
+                      <div key={documento.id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                         <div className="flex items-center space-x-3">
-                          {getFileIcon(file.name)}
+                          {getFileIcon(documento.nome_original)}
                           <div>
-                            <p className="font-medium text-gray-800">{file.customName || file.name}</p>
-                            {file.customName && file.customName !== file.name && (
-                              <p className="text-xs text-gray-500">Arquivo original: {file.name}</p>
+                            <p className="font-medium text-gray-800">{documento.nome_personalizado}</p>
+                            {documento.nome_personalizado !== documento.nome_original && (
+                              <p className="text-xs text-gray-500">Arquivo original: {documento.nome_original}</p>
                             )}
                             <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <span>{formatFileSize(file.size)}</span>
-                              {file.uploadTime && (
-                                <span>Enviado em: {new Date(file.uploadTime).toLocaleString('pt-BR')}</span>
+                              <span>{formatFileSize(documento.tamanho)}</span>
+                              {documento.created_at && (
+                                <span>Enviado em: {new Date(documento.created_at).toLocaleString('pt-BR')}</span>
                               )}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => viewDocument(file)}
+                            onClick={() => viewDocument(documento)}
                             className="text-blue-600 hover:text-blue-800 transition-colors p-2"
                             title="Visualizar documento"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => removeFile(index)}
+                            onClick={() => removeFile(documento, index)}
                             className="text-red-600 hover:text-red-800 transition-colors p-2"
                             title="Remover documento"
                           >
@@ -1069,7 +1378,293 @@ export default function PessoalPage() {
             </div>
           </div>
         )}
-       </div>
+
+        {/* Modal de Edição */}
+        {isEditModalOpen && editBombeiro && (
+          <div className="fixed inset-0 bg-coal-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-pure-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-fog-gray/20 flex flex-col">
+              {/* Cabeçalho Premium */}
+              <div className="bg-gradient-to-r from-radiant-orange to-radiant-orange/80 p-6 relative overflow-hidden flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pure-white/10 to-transparent transform -skew-x-12"></div>
+                <div className="relative w-full">
+                  <div className="text-center">
+                    <h2 className="text-2xl font-bold text-pure-white leading-tight mb-2">Editar Bombeiro</h2>
+                    <p className="text-pure-white/80 text-sm leading-relaxed">Altere as informações do colaborador</p>
+                  </div>
+                  <button
+                    onClick={closeEditModal}
+                    className="absolute -top-2 -right-4 p-1 text-pure-white/70 hover:text-pure-white transition-all duration-200 z-10"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Conteúdo do Modal - Com Scroll */}
+              <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-pure-white to-fog-gray/5 scrollbar-thin scrollbar-thumb-radiant-orange/30 scrollbar-track-fog-gray/10">
+
+                {/* Seção Dados Pessoais */}
+                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-6 mb-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
+                    Dados Pessoais
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Nome */}
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Nome Completo *</label>
+                      <input
+                        type="text"
+                        value={editBombeiro.nome || ''}
+                        onChange={(e) => updateEditBombeiroField('nome', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        placeholder="Digite o nome completo"
+                      />
+                    </div>
+
+                    {/* Telefone */}
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Telefone *</label>
+                      <input
+                        type="tel"
+                        value={editBombeiro.telefone || ''}
+                        onChange={(e) => updateEditBombeiroField('telefone', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        placeholder="(11) 99999-9999"
+                      />
+                    </div>
+
+                    {/* Email */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Email *</label>
+                      <input
+                        type="email"
+                        value={editBombeiro.email || ''}
+                        onChange={(e) => updateEditBombeiroField('email', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        placeholder="exemplo@email.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Seção Dados Funcionais */}
+                <div className="bg-radiant-orange/5 rounded-xl border border-radiant-orange/10 p-6 mb-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
+                    Dados Funcionais
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Matrícula */}
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Matrícula *</label>
+                      <input
+                        type="text"
+                        value={editBombeiro.matricula || ''}
+                        onChange={(e) => updateEditBombeiroField('matricula', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        placeholder="Digite a matrícula"
+                      />
+                    </div>
+
+                    {/* Função */}
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Função *</label>
+                      <select
+                        value={editBombeiro.funcao || ''}
+                        onChange={(e) => updateEditBombeiroField('funcao', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                      >
+                        <option value="">Selecione uma função</option>
+                        <option value="Comandante">Comandante</option>
+                        <option value="Subcomandante">Subcomandante</option>
+                        <option value="Capitão">Capitão</option>
+                        <option value="Tenente">Tenente</option>
+                        <option value="Sargento">Sargento</option>
+                        <option value="Cabo">Cabo</option>
+                        <option value="Soldado">Soldado</option>
+                      </select>
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Status *</label>
+                      <select
+                        value={editBombeiro.status || ''}
+                        onChange={(e) => updateEditBombeiroField('status', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                      >
+                        <option value="">Selecione um status</option>
+                        <option value="Ativo">Ativo</option>
+                        <option value="Inativo">Inativo</option>
+                        <option value="Licença">Licença</option>
+                        <option value="Férias">Férias</option>
+                      </select>
+                    </div>
+
+                    {/* Data de Admissão */}
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Data de Admissão *</label>
+                      <input
+                        type="date"
+                        value={editBombeiro.dataAdmissao ? editBombeiro.dataAdmissao.split('/').reverse().join('-') : ''}
+                        onChange={(e) => {
+                          const date = new Date(e.target.value);
+                          const formattedDate = date.toLocaleDateString('pt-BR');
+                          updateEditBombeiroField('dataAdmissao', formattedDate);
+                        }}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                      />
+                    </div>
+
+                    {/* Ferista */}
+                    <div className="md:col-span-2">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editBombeiro.ferista || false}
+                          onChange={(e) => updateEditBombeiroField('ferista', e.target.checked)}
+                          className="w-5 h-5 text-radiant-orange bg-pure-white border-fog-gray/30 rounded focus:ring-radiant-orange focus:ring-2 transition-all duration-200"
+                        />
+                        <span className="text-sm font-semibold text-coal-black">Ferista</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Seção Endereço */}
+                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-6 mb-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
+                    Endereço
+                  </h3>
+                  <div>
+                    <label className="block text-sm font-semibold text-coal-black mb-2">Endereço Completo</label>
+                    <textarea
+                      value={editBombeiro.endereco || ''}
+                      onChange={(e) => updateEditBombeiroField('endereco', e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 resize-none"
+                      placeholder="Digite o endereço completo"
+                    />
+                  </div>
+                </div>
+
+                {/* Seção Equipe - Moderna e Profissional */}
+                <div className="bg-gradient-to-br from-radiant-orange/5 to-radiant-orange/10 rounded-xl border border-radiant-orange/20 p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
+                    Equipe de Trabalho
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {(['Alfa', 'Bravo', 'Charlie', 'Delta'] as const).map((equipe) => (
+                      <button
+                        key={equipe}
+                        type="button"
+                        onClick={() => openConfirmEquipeModal(equipe)}
+                        className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                          editBombeiro.equipe === equipe
+                            ? `${getEquipeColor(equipe)} border-current shadow-lg`
+                            : 'bg-pure-white border-fog-gray/30 hover:border-radiant-orange/50 text-coal-black'
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className={`w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center font-bold text-sm ${
+                            editBombeiro.equipe === equipe
+                              ? 'bg-white/20 text-current'
+                              : 'bg-radiant-orange/10 text-radiant-orange'
+                          }`}>
+                            {equipe[0]}
+                          </div>
+                          <span className="font-semibold text-sm">{equipe}</span>
+                        </div>
+                        {editBombeiro.equipe === equipe && (
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-sm text-coal-black/60 mt-3 text-center">
+                    Clique em uma equipe para alterar. Uma confirmação será solicitada.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer do Modal */}
+              <div className="bg-fog-gray/10 border-t border-fog-gray/20 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={closeEditModal}
+                    className="px-6 py-3 text-coal-black/70 hover:text-coal-black font-medium transition-colors rounded-lg hover:bg-fog-gray/30"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={saveEditBombeiro}
+                    className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-radiant-orange to-radiant-orange/80 text-pure-white rounded-xl hover:from-radiant-orange/90 hover:to-radiant-orange/70 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Salvar Alterações
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmação de Mudança de Equipe */}
+        {isConfirmEquipeModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <div className="bg-pure-white rounded-2xl shadow-2xl max-w-md w-full border border-fog-gray/20">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-radiant-orange to-radiant-orange/80 p-6 rounded-t-2xl">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Confirmar Mudança de Equipe</h3>
+                  <p className="text-white/80 text-sm">Esta ação alterará a equipe do bombeiro</p>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <div className="text-center mb-6">
+                  <p className="text-coal-black mb-4">
+                    Tem certeza que deseja alterar a equipe de <strong>{editBombeiro.nome}</strong> para:
+                  </p>
+                  <div className={`inline-flex items-center px-6 py-3 rounded-xl font-semibold ${getEquipeColor(newEquipe)}`}>
+                    Equipe {newEquipe}
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsConfirmEquipeModalOpen(false)}
+                    className="flex-1 px-4 py-3 text-coal-black/70 hover:text-coal-black font-medium transition-colors rounded-lg hover:bg-fog-gray/30 border border-fog-gray/30"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmEquipeChange}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-radiant-orange to-radiant-orange/80 text-pure-white rounded-lg hover:from-radiant-orange/90 hover:to-radiant-orange/70 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal de Documentos */}
         {isDocModalOpen && selectedBombeiroForDocs && (
@@ -1168,9 +1763,21 @@ export default function PessoalPage() {
                 {pendingFiles.length > 0 && (
                   <button
                     onClick={sendFiles}
-                    className="bg-gradient-to-r from-radiant-orange to-radiant-orange/90 hover:from-radiant-orange/90 hover:to-radiant-orange text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                    disabled={isUploading}
+                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
+                      isUploading 
+                        ? 'bg-gray-400 text-white cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-radiant-orange to-radiant-orange/90 hover:from-radiant-orange/90 hover:to-radiant-orange text-white'
+                    }`}
                   >
-                    Enviar Documentos ({pendingFiles.length})
+                    {isUploading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Enviando...
+                      </div>
+                    ) : (
+                      `Enviar Documentos (${pendingFiles.length})`
+                    )}
                   </button>
                 )}
               </div>
@@ -1215,7 +1822,7 @@ export default function PessoalPage() {
             </div>
           </div>
         )}
-
-      </SidebarDemo>
-    );
- }
+      </div>
+    </SidebarDemo>
+  );
+}
