@@ -2,8 +2,9 @@
 
 import Header from '@/components/ui/header';
 import { SidebarDemo } from '@/components/ui/sidebar-demo';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, FileText, Shield, Car, Flame, Users, Edit, X, Phone, Mail, MapPin, Calendar, DollarSign, Plus, Upload, Trash2, UserPlus, Eye, Zap, Wrench, Heart, Star, Award } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 // Tipos para os dados
 interface Bombeiro {
@@ -16,7 +17,6 @@ interface Bombeiro {
   email: string;
   endereco: string;
   dataAdmissao: string;
-  salario: string;
   documentos: number;
   ferista: boolean;
 }
@@ -39,7 +39,6 @@ const bombeirosMock: Bombeiro[] = [
     email: 'joao.silva@bombeiros.gov.br',
     endereco: 'Rua das Flores, 123 - Centro',
     dataAdmissao: '15/03/2020',
-    salario: 'R$ 8.500,00',
     documentos: 12,
     ferista: false
   },
@@ -53,7 +52,6 @@ const bombeirosMock: Bombeiro[] = [
     email: 'maria.oliveira@bombeiros.gov.br',
     endereco: 'Av. Principal, 456 - Jardim',
     dataAdmissao: '22/08/2019',
-    salario: 'R$ 7.200,00',
     documentos: 8,
     ferista: true
   },
@@ -67,7 +65,6 @@ const bombeirosMock: Bombeiro[] = [
     email: 'carlos.lima@bombeiros.gov.br',
     endereco: 'Rua da Paz, 789 - Vila Nova',
     dataAdmissao: '10/01/2021',
-    salario: 'R$ 6.800,00',
     documentos: 15,
     ferista: false
   },
@@ -81,7 +78,6 @@ const bombeirosMock: Bombeiro[] = [
     email: 'ana.ferreira@bombeiros.gov.br',
     endereco: 'Rua do Sol, 321 - Centro',
     dataAdmissao: '05/11/2018',
-    salario: 'R$ 7.500,00',
     documentos: 10,
     ferista: true
   },
@@ -95,26 +91,38 @@ const bombeirosMock: Bombeiro[] = [
     email: 'pedro.souza@bombeiros.gov.br',
     endereco: 'Av. das Nações, 654 - Bairro Alto',
     dataAdmissao: '18/06/2022',
-    salario: 'R$ 5.900,00',
     documentos: 6,
     ferista: false
   }
 ];
 
 export default function PessoalPage() {
+  // Estados do componente
+  const [bombeiros, setBombeiros] = useState<Bombeiro[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Todos');
-  const [funcaoFilter, setFuncaoFilter] = useState('Todas');
+  const [selectedFunction, setSelectedFunction] = useState<string>('Todas');
+  const [selectedStatus, setSelectedStatus] = useState<string>('Todos');
   const [selectedBombeiro, setSelectedBombeiro] = useState<Bombeiro | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [isDocListModalOpen, setIsDocListModalOpen] = useState(false);
   const [selectedBombeiroForDocs, setSelectedBombeiroForDocs] = useState<Bombeiro | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<{[key: number]: FileWithCustomName[]}>({});
   const [pendingFiles, setPendingFiles] = useState<FileWithCustomName[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<{[key: number]: FileWithCustomName[]}>({});
   const [fileNames, setFileNames] = useState<{[key: number]: string}>({});
-  const [bombeiros, setBombeiros] = useState<Bombeiro[]>(bombeirosMock);
+  
+  // Estado para notificação
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error';
+  }>({
+    show: false,
+    message: '',
+    type: 'success'
+  });
+  
   const [newBombeiro, setNewBombeiro] = useState<Partial<Bombeiro>>({
     nome: '',
     funcao: 'BA-GS',
@@ -133,6 +141,44 @@ export default function PessoalPage() {
     userName: 'Usuário',
     userEmail: 'usuario@empresa.com'
   };
+
+  // Carregar bombeiros do Supabase na inicialização
+  useEffect(() => {
+    const loadBombeiros = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('bombeiros')
+          .select('*')
+          .order('nome');
+
+        if (error) {
+          console.error('Erro ao carregar bombeiros:', error);
+          return;
+        }
+
+        // Converter dados do Supabase para o formato local
+        const bombeirosList: Bombeiro[] = data.map(item => ({
+          id: item.id,
+          nome: item.nome,
+          funcao: item.funcao as 'BA-GS' | 'BA-CE' | 'BA-LR' | 'BA-MC' | 'BA-2',
+          matricula: item.matricula,
+          status: item.status as 'Ativo' | 'Férias' | 'Afastado' | 'Licença',
+          telefone: item.telefone,
+          email: item.email,
+          endereco: item.endereco,
+          dataAdmissao: new Date(item.data_admissao).toLocaleDateString('pt-BR'),
+          documentos: item.documentos,
+          ferista: item.ferista
+        }));
+
+        setBombeiros(bombeirosList);
+      } catch (error) {
+        console.error('Erro inesperado ao carregar bombeiros:', error);
+      }
+    };
+
+    loadBombeiros();
+  }, []);
 
   // Função para obter ícone da função
   const getFuncaoIcon = (funcao: string) => {
@@ -161,8 +207,8 @@ export default function PessoalPage() {
   const filteredBombeiros = bombeiros.filter(bombeiro => {
     const matchesSearch = bombeiro.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          bombeiro.matricula.includes(searchTerm);
-    const matchesStatus = statusFilter === 'Todos' || bombeiro.status === statusFilter;
-    const matchesFuncao = funcaoFilter === 'Todas' || bombeiro.funcao === funcaoFilter;
+    const matchesStatus = selectedStatus === 'Todos' || bombeiro.status === selectedStatus;
+    const matchesFuncao = selectedFunction === 'Todas' || bombeiro.funcao === selectedFunction;
     
     return matchesSearch && matchesStatus && matchesFuncao;
   });
@@ -202,30 +248,91 @@ export default function PessoalPage() {
   };
 
   // Adicionar novo bombeiro
-  const addBombeiro = () => {
+  const addBombeiro = async () => {
+    console.log('Função addBombeiro chamada!');
+    console.log('Dados do novo bombeiro:', newBombeiro);
+    
     if (!newBombeiro.nome || !newBombeiro.matricula || !newBombeiro.telefone || !newBombeiro.email) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+      console.log('Campos obrigatórios não preenchidos');
+      showNotification('Por favor, preencha todos os campos obrigatórios.', 'error');
       return;
     }
 
-    const newId = Math.max(...bombeiros.map(b => b.id)) + 1;
-    const bombeiroToAdd: Bombeiro = {
-      id: newId,
-      nome: newBombeiro.nome!,
-      funcao: newBombeiro.funcao as 'BA-GS' | 'BA-CE' | 'BA-LR' | 'BA-MC' | 'BA-2',
-      matricula: newBombeiro.matricula!,
-      status: newBombeiro.status as 'Ativo' | 'Férias' | 'Afastado' | 'Licença',
-      telefone: newBombeiro.telefone!,
-      email: newBombeiro.email!,
-      endereco: newBombeiro.endereco || '',
-      dataAdmissao: newBombeiro.dataAdmissao || new Date().toLocaleDateString('pt-BR'),
-      salario: 'R$ 0,00',
-      documentos: newBombeiro.documentos || 0,
-      ferista: newBombeiro.ferista || false
-    };
+    console.log('Validação passou, tentando inserir no Supabase...');
 
-    setBombeiros([...bombeiros, bombeiroToAdd]);
-    closeAddModal();
+    try {
+      // Preparar dados para o Supabase
+      const bombeiroData = {
+        nome: newBombeiro.nome,
+        funcao: newBombeiro.funcao || 'BA-GS',
+        matricula: newBombeiro.matricula,
+        status: newBombeiro.status || 'Ativo',
+        telefone: newBombeiro.telefone,
+        email: newBombeiro.email,
+        endereco: newBombeiro.endereco || '',
+        data_admissao: newBombeiro.dataAdmissao || new Date().toISOString().split('T')[0],
+        documentos: newBombeiro.documentos || 0,
+        ferista: newBombeiro.ferista || false
+      };
+
+      console.log('Dados preparados para o Supabase:', bombeiroData);
+
+      // Inserir no Supabase
+      const { data, error } = await supabase
+        .from('bombeiros')
+        .insert([bombeiroData])
+        .select()
+        .single();
+
+      console.log('Resposta do Supabase - data:', data);
+      console.log('Resposta do Supabase - error:', error);
+
+      if (error) {
+        console.error('Erro ao inserir bombeiro:', error);
+        showNotification('Erro ao adicionar bombeiro: ' + error.message, 'error');
+        return;
+      }
+
+      // Converter data do Supabase para o formato local
+      const bombeiroToAdd: Bombeiro = {
+        id: data.id,
+        nome: data.nome,
+        funcao: data.funcao as 'BA-GS' | 'BA-CE' | 'BA-LR' | 'BA-MC' | 'BA-2',
+        matricula: data.matricula,
+        status: data.status as 'Ativo' | 'Férias' | 'Afastado' | 'Licença',
+        telefone: data.telefone,
+        email: data.email,
+        endereco: data.endereco,
+        dataAdmissao: new Date(data.data_admissao).toLocaleDateString('pt-BR'),
+        documentos: data.documentos,
+        ferista: data.ferista
+      };
+
+      console.log('Bombeiro convertido para adicionar:', bombeiroToAdd);
+
+      // Atualizar estado local
+      setBombeiros([...bombeiros, bombeiroToAdd]);
+      closeAddModal();
+      showNotification(`Bombeiro ${data.nome} adicionado com sucesso!`, 'success');
+
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      showNotification('Erro inesperado ao adicionar bombeiro.', 'error');
+    }
+  };
+
+  // Função para mostrar notificação
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({
+      show: true,
+      message,
+      type
+    });
+
+    // Auto-hide após 4 segundos
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 4000);
   };
 
   // Atualizar campo do novo bombeiro
@@ -331,7 +438,7 @@ export default function PessoalPage() {
       // Atualizar contador de documentos do bombeiro
       setBombeiros(prev => prev.map(b => 
         b.id === selectedBombeiroForDocs.id 
-          ? { ...b, documentos: (prev[selectedBombeiroForDocs.id] || []).length + pendingFiles.length }
+          ? { ...b, documentos: (uploadedFiles[selectedBombeiroForDocs.id]?.length || 0) + pendingFiles.length }
           : b
       ));
       
@@ -453,8 +560,8 @@ export default function PessoalPage() {
                 <div className="flex items-center gap-2">
                   <Filter className="text-coal-black/60 w-5 h-5" />
                   <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
                     className="px-4 py-3 border border-fog-gray/30 rounded-lg focus:ring-2 focus:ring-radiant-orange/20 focus:border-radiant-orange transition-colors bg-white"
                   >
                     <option value="Todos">Todos os Status</option>
@@ -468,8 +575,8 @@ export default function PessoalPage() {
                 {/* Filtro por Função */}
                 <div>
                   <select
-                    value={funcaoFilter}
-                    onChange={(e) => setFuncaoFilter(e.target.value)}
+                    value={selectedFunction}
+                    onChange={(e) => setSelectedFunction(e.target.value)}
                     className="px-4 py-3 border border-fog-gray/30 rounded-lg focus:ring-2 focus:ring-radiant-orange/20 focus:border-radiant-orange transition-colors bg-white"
                   >
                     <option value="Todas">Todas as Funções</option>
@@ -689,23 +796,18 @@ export default function PessoalPage() {
           <div className="fixed inset-0 bg-coal-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-pure-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-fog-gray/20 flex flex-col">
               {/* Cabeçalho Premium */}
-              <div className="bg-gradient-to-r from-radiant-orange to-radiant-orange/80 p-6 relative overflow-hidden">
+              <div className="bg-gradient-to-r from-radiant-orange to-radiant-orange/80 p-6 relative overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pure-white/10 to-transparent transform -skew-x-12"></div>
-                <div className="relative flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-pure-white/20 backdrop-blur-sm rounded-xl p-3">
-                      <UserPlus className="w-6 h-6 text-pure-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-pure-white">Adicionar Novo Bombeiro</h2>
-                      <p className="text-pure-white/80 text-sm">Preencha os dados do novo colaborador</p>
-                    </div>
+                <div className="relative w-full">
+                  <div className="text-center">
+                    <h2 className="text-2xl font-bold text-pure-white leading-tight mb-2">Adicionar Novo Bombeiro</h2>
+                    <p className="text-pure-white/80 text-sm leading-relaxed">Preencha os dados do novo colaborador</p>
                   </div>
                   <button
                     onClick={closeAddModal}
-                    className="bg-pure-white/20 backdrop-blur-sm rounded-xl p-2 text-pure-white hover:bg-pure-white/30 transition-all duration-200"
+                    className="absolute -top-2 -right-4 p-1 text-pure-white/70 hover:text-pure-white transition-all duration-200 z-10"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -866,6 +968,7 @@ export default function PessoalPage() {
                   Cancelar
                 </button>
                 <button
+                  type="button"
                   onClick={addBombeiro}
                   className="bg-gradient-to-r from-radiant-orange to-radiant-orange/90 hover:from-radiant-orange/90 hover:to-radiant-orange text-pure-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
@@ -1074,6 +1177,45 @@ export default function PessoalPage() {
             </div>
           </div>
         )}
+
+        {/* Componente de Notificação */}
+        {notification.show && (
+          <div className={`fixed top-4 right-4 z-[60] transform transition-all duration-300 ease-in-out ${
+            notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+          }`}>
+            <div className={`flex items-center space-x-3 px-6 py-4 rounded-lg shadow-lg border-l-4 backdrop-blur-sm ${
+              notification.type === 'success' 
+                ? 'bg-green-50/95 border-green-500 text-green-800' 
+                : 'bg-red-50/95 border-red-500 text-red-800'
+            }`}>
+              <div className="flex-shrink-0">
+                {notification.type === 'success' ? (
+                  <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{notification.message}</p>
+              </div>
+              <button
+                onClick={() => setNotification(prev => ({ ...prev, show: false }))}
+                className={`flex-shrink-0 ml-4 inline-flex text-sm ${
+                  notification.type === 'success' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'
+                } transition-colors`}
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
       </SidebarDemo>
     );
  }
