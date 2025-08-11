@@ -29,7 +29,7 @@ export function SidebarDemo({ children }: SidebarDemoProps) {
     },
     {
       label: "Ocorrências",
-      href: "#",
+      href: "/dashboard/ocorrencias",
       icon: (
         <Siren className="text-coal-black h-5 w-5 flex-shrink-0" />
       ),
