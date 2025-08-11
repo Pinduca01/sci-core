@@ -163,7 +163,15 @@ export const SidebarLink = ({
   className?: string;
   props?: LinkProps;
 }) => {
-  const { open, animate } = useSidebar();
+  const { open, animate, setOpen } = useSidebar();
+  
+  const handleClick = () => {
+    // Minimiza a sidebar em dispositivos móveis após o clique
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setOpen(false);
+    }
+  };
+  
   return (
     <Link
       href={link.href}
@@ -171,6 +179,7 @@ export const SidebarLink = ({
         "flex items-center justify-start gap-2 group/sidebar py-2 text-coal-black hover:text-radiant-orange transition-colors",
         className
       )}
+      onClick={handleClick}
       {...props}
     >
       {link.icon}

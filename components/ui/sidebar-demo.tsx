@@ -57,7 +57,7 @@ export function SidebarDemo({ children }: SidebarDemoProps) {
     },
     {
       label: "Viaturas",
-      href: "#",
+      href: "/dashboard/viaturas",
       icon: (
         <Car className="text-coal-black h-5 w-5 flex-shrink-0" />
       ),
