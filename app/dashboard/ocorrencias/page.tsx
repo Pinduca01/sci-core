@@ -2,14 +2,16 @@
 
 import Header from '@/components/ui/header';
 import { SidebarDemo } from '@/components/ui/sidebar-demo';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, FileText, AlertTriangle, Car, Flame, Users, Edit, X, Phone, Mail, MapPin, Calendar, DollarSign, Plus, Upload, Trash2, UserPlus, Eye, Clock, CheckCircle, XCircle, AlertCircle, Brain, Send, Loader2, Download } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { ocorrenciaService, Ocorrencia, TIPOS_OCORRENCIA, EQUIPES, STATUS_OCORRENCIA, PRIORIDADES } from '@/lib/services/ocorrenciaService';
 
-// Tipos para os dados
-interface Ocorrencia {
-  id: number;
+// Interface para compatibilidade com o código existente
+interface OcorrenciaLegacy {
+  id: string;
   titulo: string;
-  tipo: 'Incêndios ou Vazamentos de Combustíveis no PAA' | 'Condições de Baixa Visibilidade' | 'Atendimento à Aeronave Presidencial' | 'Incêndio em Instalações Aeroportuárias' | 'Ocorrências com Artigos Perigosos' | 'Remoção de Animais e Dispersão de Avifauna' | 'Incêndios Florestais ou em Áreas de Cobertura Vegetal Próximas ao Aeródromo' | 'Emergências Médicas em Geral' | 'Iluminação de Emergência em Pista de Pouso e Decolagem' | 'Ocorrência aeronáutica';
+  tipo: string;
   prioridade: 'Baixa' | 'Média' | 'Alta' | 'Crítica';
   status: 'Aberta' | 'Em Andamento' | 'Resolvida' | 'Cancelada';
   endereco: string;
@@ -21,17 +23,21 @@ interface Ocorrencia {
   tempoResposta: string;
   descricaoDetalhada?: string;
   // Campos de cronologia
+  cronologia?: Array<{ hora: string; descricao: string; }>;
   horarioAcionamento?: string;
   horarioSaida?: string;
   horarioChegada?: string;
   horarioTermino?: string;
   horarioRetorno?: string;
   // Campos de vítimas
+  vitimas?: number;
   numeroVitimas?: number;
   vitimasIlesas?: number;
-  vitimasFeridas?: number;
+  vitimas_feridas?: number;
   vitimasObito?: number;
+  vitimas_fatais?: number;
   // Campos de recursos
+  recursos?: string[];
   viaturas?: string[];
   bombeirosEnvolvidos?: string[];
   equipamentosUtilizados?: string[];
@@ -40,7 +46,6 @@ interface Ocorrencia {
   area?: string;
   data?: string;
   aeroporto?: string;
-  vitimasFatais?: number;
   horaAcionamento?: string;
   horaSaida?: string;
   horaChegada?: string;
@@ -49,77 +54,41 @@ interface Ocorrencia {
   declaracaoSucinta?: string;
 }
 
-// Dados mockados
-const ocorrenciasMock: Ocorrencia[] = [
-  {
-    id: 1,
-    titulo: 'Incêndio em Residência',
-    tipo: 'Incêndios ou Vazamentos de Combustíveis no PAA',
-    prioridade: 'Alta',
-    status: 'Resolvida',
-    endereco: 'Rua das Flores, 123 - Centro',
-    dataOcorrencia: '15/03/2024',
-    horaOcorrencia: '14:30',
-    responsavel: 'João Silva Santos',
-    descricao: 'Incêndio em cozinha de residência unifamiliar',
-    equipesEnvolvidas: 2,
-    tempoResposta: '8 min',
-    equipe: 'Equipe Alpha'
-  },
-  {
-    id: 2,
-    titulo: 'Resgate em Altura',
-    tipo: 'Emergências Médicas em Geral',
-    prioridade: 'Crítica',
-    status: 'Em Andamento',
-    endereco: 'Av. Principal, 456 - Jardim',
-    dataOcorrencia: '16/03/2024',
-    horaOcorrencia: '09:15',
-    responsavel: 'Maria Oliveira Costa',
-    descricao: 'Trabalhador preso em andaime de prédio em construção',
-    equipesEnvolvidas: 3,
-    tempoResposta: '12 min',
-    equipe: 'Equipe Bravo'
-  },
-  {
-    id: 3,
-    titulo: 'Acidente de Trânsito',
-    tipo: 'Ocorrência aeronáutica',
-    prioridade: 'Média',
-    status: 'Aberta',
-    endereco: 'Rua da Paz, 789 - Vila Nova',
-    dataOcorrencia: '16/03/2024',
-    horaOcorrencia: '16:45',
-    responsavel: 'Carlos Roberto Lima',
-    descricao: 'Colisão entre dois veículos com vítimas presas',
-    equipesEnvolvidas: 2,
-    tempoResposta: 'Pendente',
-    equipe: 'Equipe Charlie'
-  }
-];
-
 export default function OcorrenciasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [tipoFilter, setTipoFilter] = useState('Todos');
   const [equipeFilter, setEquipeFilter] = useState('Todos');
   const [dataFilter, setDataFilter] = useState('');
-  const [selectedOcorrencia, setSelectedOcorrencia] = useState<Ocorrencia | null>(null);
+  const [selectedOcorrencia, setSelectedOcorrencia] = useState<OcorrenciaLegacy | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [ocorrencias, setOcorrencias] = useState<Ocorrencia[]>(ocorrenciasMock);
+  const [ocorrencias, setOcorrencias] = useState<OcorrenciaLegacy[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newOcorrencia, setNewOcorrencia] = useState<Partial<Ocorrencia>>({
     titulo: '',
-    tipo: 'Incêndios ou Vazamentos de Combustíveis no PAA',
+    tipo: TIPOS_OCORRENCIA[0],
     prioridade: 'Média',
     status: 'Aberta',
     endereco: '',
-    dataOcorrencia: '',
-    horaOcorrencia: '',
-    responsavel: '',
+    data_ocorrencia: '',
+    hora_ocorrencia: '',
     descricao: '',
-    equipesEnvolvidas: 1,
-    tempoResposta: 'Pendente'
+    equipe: EQUIPES[0],
+    vitimas_fatais: 0,
+    vitimas_feridas: 0,
+    area: '',
+    viaturas: '',
+    equipamentos_utilizados: [],
+    bombeiros_envolvidos: [],
+    // Campos de cronologia
+    hora_acionamento: '',
+    hora_saida: '',
+    hora_chegada: '',
+    hora_termino: '',
+    hora_retorno: '',
+    descricao_detalhada: ''
   });
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
@@ -129,21 +98,112 @@ export default function OcorrenciasPage() {
   const [correctedText, setCorrectedText] = useState('');
   const [isCorrectingText, setIsCorrectingText] = useState(false);
 
-  // Dados mockados do usuário
-  const userData = {
+  // Dados do usuário - usar dados básicos para evitar recursão RLS
+  const [userData, setUserData] = useState({
     userName: 'Usuário',
     userEmail: 'usuario@empresa.com'
+  });
+
+  // Carregar dados do usuário autenticado
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Usar dados básicos do auth para evitar recursão RLS
+          setUserData({
+            userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+            userEmail: user.email || 'email@exemplo.com'
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do usuário:', error);
+        setUserData({
+          userName: 'Usuário',
+          userEmail: 'usuario@empresa.com'
+        });
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+  // Carregar ocorrências do Supabase
+  useEffect(() => {
+    const loadOcorrencias = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const data = await ocorrenciaService.getOcorrencias();
+        
+        // Converter dados do Supabase para formato legacy
+        const ocorrenciasLegacy: OcorrenciaLegacy[] = data.map(ocorrencia => ({
+          id: ocorrencia.id || '',
+          titulo: ocorrencia.titulo,
+          tipo: ocorrencia.tipo,
+          prioridade: ocorrencia.prioridade,
+          status: ocorrencia.status,
+          endereco: ocorrencia.endereco,
+          dataOcorrencia: formatDateForDisplay(ocorrencia.data_ocorrencia),
+          horaOcorrencia: ocorrencia.hora_ocorrencia,
+          responsavel: ocorrencia.responsavel_nome || 'Não informado',
+          descricao: ocorrencia.descricao,
+          equipesEnvolvidas: 1, // Valor padrão
+          tempoResposta: ocorrencia.tempo_total_minutos ? `${ocorrencia.tempo_total_minutos} min` : 'Pendente',
+          descricaoDetalhada: ocorrencia.descricao_detalhada,
+          equipe: ocorrencia.equipe,
+          area: ocorrencia.area,
+          vitimas_fatais: ocorrencia.vitimas_fatais,
+          vitimas_feridas: ocorrencia.vitimas_feridas,
+          horarioAcionamento: ocorrencia.hora_acionamento,
+          horarioSaida: ocorrencia.hora_saida,
+          horarioChegada: ocorrencia.hora_chegada,
+          horarioTermino: ocorrencia.hora_termino,
+          horarioRetorno: ocorrencia.hora_retorno,
+          viaturas: ocorrencia.viaturas ? [ocorrencia.viaturas] : [],
+          bombeirosEnvolvidos: ocorrencia.bombeiros_envolvidos || [],
+          equipamentosUtilizados: ocorrencia.equipamentos_utilizados || []
+        }));
+        
+        setOcorrencias(ocorrenciasLegacy);
+      } catch (err) {
+        console.error('Erro ao carregar ocorrências:', err);
+        setError('Erro ao carregar ocorrências. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOcorrencias();
+  }, []);
+
+  // Função para formatar data para exibição (YYYY-MM-DD -> DD/MM/YYYY)
+  const formatDateForDisplay = (dateString: string): string => {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
+  // Função para formatar data para banco (DD/MM/YYYY -> YYYY-MM-DD)
+  const formatDateForDatabase = (dateString: string): string => {
+    if (!dateString) return '';
+    if (dateString.includes('-')) return dateString; // Já está no formato correto
+    const [day, month, year] = dateString.split('/');
+    return `${year}-${month}-${day}`;
   };
 
   // Função para obter ícone do tipo
-  const getTipoIcon = (tipo: string) => {
+  const getTipoIcon = (tipo: string, className: string = "w-5 h-5") => {
+    const baseClasses = className;
     switch (tipo) {
-      case 'Incêndio': return <Flame className="w-5 h-5 text-red-600" />;
-      case 'Resgate': return <Users className="w-5 h-5 text-blue-600" />;
-      case 'Acidente': return <Car className="w-5 h-5 text-yellow-600" />;
-      case 'Emergência Médica': return <AlertTriangle className="w-5 h-5 text-green-600" />;
-      case 'Vazamento': return <AlertCircle className="w-5 h-5 text-purple-600" />;
-      default: return <AlertTriangle className="w-5 h-5 text-gray-600" />;
+      case 'Incêndio': return <Flame className={`${baseClasses} text-red-600`} />;
+      case 'Resgate': return <Users className={`${baseClasses} text-blue-600`} />;
+      case 'Acidente': return <Car className={`${baseClasses} text-yellow-600`} />;
+      case 'Emergência Médica': return <AlertTriangle className={`${baseClasses} text-green-600`} />;
+      case 'Vazamento': return <AlertCircle className={`${baseClasses} text-purple-600`} />;
+      default: return <AlertTriangle className={`${baseClasses} text-gray-600`} />;
     }
   };
 
@@ -190,7 +250,7 @@ export default function OcorrenciasPage() {
    });
 
   // Abrir modal com detalhes
-  const openModal = (ocorrencia: Ocorrencia) => {
+  const openModal = (ocorrencia: OcorrenciaLegacy) => {
     setSelectedOcorrencia(ocorrencia);
     setIsModalOpen(true);
   };
@@ -211,28 +271,39 @@ export default function OcorrenciasPage() {
     setIsAddModalOpen(false);
     setNewOcorrencia({
       titulo: '',
-      tipo: 'Incêndios ou Vazamentos de Combustíveis no PAA',
+      tipo: TIPOS_OCORRENCIA[0],
       prioridade: 'Média',
       status: 'Aberta',
       endereco: '',
-      dataOcorrencia: '',
-      horaOcorrencia: '',
-      responsavel: '',
+      data_ocorrencia: '',
+      hora_ocorrencia: '',
       descricao: '',
-      equipesEnvolvidas: 1,
-      tempoResposta: 'Pendente'
+      equipe: EQUIPES[0],
+      vitimas_fatais: 0,
+      vitimas_feridas: 0,
+      area: '',
+      viaturas: '',
+      equipamentos_utilizados: [],
+      bombeiros_envolvidos: [],
+      // Campos de cronologia
+      hora_acionamento: '',
+      hora_saida: '',
+      hora_chegada: '',
+      hora_termino: '',
+      hora_retorno: '',
+      descricao_detalhada: ''
     });
   };
 
   // Adicionar nova ocorrência
-  const addOcorrencia = () => {
+  const addOcorrencia = async () => {
     // Validação de campos obrigatórios
     const camposObrigatorios = [
       { campo: 'titulo', nome: 'Título da Ocorrência' },
       { campo: 'endereco', nome: 'Endereço' },
-      { campo: 'responsavel', nome: 'Responsável' },
-      { campo: 'dataOcorrencia', nome: 'Data da Ocorrência' },
-      { campo: 'horaOcorrencia', nome: 'Hora da Ocorrência' }
+      { campo: 'data_ocorrencia', nome: 'Data da Ocorrência' },
+      { campo: 'hora_ocorrencia', nome: 'Hora da Ocorrência' },
+      { campo: 'descricao', nome: 'Descrição' }
     ];
 
     const camposFaltando = camposObrigatorios.filter(item => 
@@ -250,64 +321,90 @@ export default function OcorrenciasPage() {
     const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
     const horaRegex = /^\d{2}:\d{2}$/;
     
-    if (!dataRegex.test(newOcorrencia.dataOcorrencia || '')) {
-      alert('Por favor, insira uma data válida no formato correto.');
+    if (!dataRegex.test(newOcorrencia.data_ocorrencia || '')) {
+      alert('Por favor, insira uma data válida no formato YYYY-MM-DD.');
       return;
     }
     
-    if (!horaRegex.test(newOcorrencia.horaOcorrencia || '')) {
-      alert('Por favor, insira uma hora válida no formato correto.');
+    if (!horaRegex.test(newOcorrencia.hora_ocorrencia || '')) {
+      alert('Por favor, insira uma hora válida no formato HH:MM.');
       return;
     }
 
     try {
-      // Gerar novo ID
-      const newId = ocorrencias.length > 0 ? Math.max(...ocorrencias.map(o => o.id)) + 1 : 1;
+      setLoading(true);
       
-      // Criar objeto da ocorrência
-      const ocorrenciaToAdd: Ocorrencia = {
-         id: newId,
-         titulo: newOcorrencia.titulo!.trim(),
-         tipo: newOcorrencia.tipo as 'Incêndios ou Vazamentos de Combustíveis no PAA' | 'Condições de Baixa Visibilidade' | 'Atendimento à Aeronave Presidencial' | 'Incêndio em Instalações Aeroportuárias' | 'Ocorrências com Artigos Perigosos' | 'Remoção de Animais e Dispersão de Avifauna' | 'Incêndios Florestais ou em Áreas de Cobertura Vegetal Próximas ao Aeródromo' | 'Emergências Médicas em Geral' | 'Iluminação de Emergência em Pista de Pouso e Decolagem' | 'Ocorrência aeronáutica',
-         prioridade: newOcorrencia.prioridade as 'Baixa' | 'Média' | 'Alta' | 'Crítica',
-         status: 'Aberta', // Sempre inicia como 'Aberta'
-         endereco: newOcorrencia.endereco!.trim(),
-         dataOcorrencia: newOcorrencia.dataOcorrencia!,
-         horaOcorrencia: newOcorrencia.horaOcorrencia!,
-         responsavel: newOcorrencia.responsavel!.trim(),
-         descricao: newOcorrencia.descricao?.trim() || '',
-         equipesEnvolvidas: newOcorrencia.equipesEnvolvidas || 1,
-         tempoResposta: 'Pendente',
-        descricaoDetalhada: newOcorrencia.descricaoDetalhada?.trim() || '',
-        // Campos de cronologia
-        horarioAcionamento: newOcorrencia.horarioAcionamento || '',
-        horarioSaida: newOcorrencia.horarioSaida || '',
-        horarioChegada: newOcorrencia.horarioChegada || '',
-        horarioTermino: newOcorrencia.horarioTermino || '',
-        horarioRetorno: newOcorrencia.horarioRetorno || '',
-        // Campos de vítimas
-        numeroVitimas: newOcorrencia.numeroVitimas || 0,
-        vitimasIlesas: newOcorrencia.vitimasIlesas || 0,
-        vitimasFeridas: newOcorrencia.vitimasFeridas || 0,
-        vitimasObito: newOcorrencia.vitimasObito || 0,
-        // Campos de recursos
-        viaturas: newOcorrencia.viaturas || [],
-        bombeirosEnvolvidos: newOcorrencia.bombeirosEnvolvidos || [],
-        equipamentosUtilizados: newOcorrencia.equipamentosUtilizados || []
+      // Criar objeto da ocorrência para o Supabase
+      const ocorrenciaData: Omit<Ocorrencia, 'id' | 'created_at' | 'updated_at' | 'tempo_total_minutos'> = {
+        titulo: newOcorrencia.titulo!.trim(),
+        tipo: newOcorrencia.tipo!,
+        prioridade: newOcorrencia.prioridade!,
+        status: 'Aberta',
+        endereco: newOcorrencia.endereco!.trim(),
+        data_ocorrencia: newOcorrencia.data_ocorrencia!,
+        hora_ocorrencia: newOcorrencia.hora_ocorrencia!,
+        area: newOcorrencia.area || 'Não especificada',
+        equipe: newOcorrencia.equipe!,
+        bombeiros_envolvidos: newOcorrencia.bombeiros_envolvidos || [],
+        hora_acionamento: newOcorrencia.hora_ocorrencia!, // Usar hora da ocorrência como padrão
+        hora_saida: newOcorrencia.hora_ocorrencia!,
+        hora_chegada: newOcorrencia.hora_ocorrencia!,
+        hora_termino: newOcorrencia.hora_ocorrencia!,
+        hora_retorno: newOcorrencia.hora_ocorrencia!,
+        vitimas_fatais: newOcorrencia.vitimas_fatais || 0,
+        vitimas_feridas: newOcorrencia.vitimas_feridas || 0,
+        viaturas: newOcorrencia.viaturas || '',
+        equipamentos_utilizados: newOcorrencia.equipamentos_utilizados || [],
+        descricao: newOcorrencia.descricao!.trim(),
+        descricao_detalhada: newOcorrencia.descricao_detalhada?.trim()
       };
 
-      // Adicionar a ocorrência à lista
-      setOcorrencias(prevOcorrencias => [...prevOcorrencias, ocorrenciaToAdd]);
+      // Salvar no Supabase
+      const novaOcorrencia = await ocorrenciaService.createOcorrencia(ocorrenciaData);
+      
+      // Converter para formato legacy e adicionar à lista
+      const ocorrenciaLegacy: OcorrenciaLegacy = {
+        id: novaOcorrencia.id || '',
+        titulo: novaOcorrencia.titulo,
+        tipo: novaOcorrencia.tipo,
+        prioridade: novaOcorrencia.prioridade,
+        status: novaOcorrencia.status,
+        endereco: novaOcorrencia.endereco,
+        dataOcorrencia: formatDateForDisplay(novaOcorrencia.data_ocorrencia),
+        horaOcorrencia: novaOcorrencia.hora_ocorrencia,
+        responsavel: novaOcorrencia.responsavel_nome || 'Não informado',
+        descricao: novaOcorrencia.descricao,
+        equipesEnvolvidas: 1,
+        tempoResposta: 'Pendente',
+        descricaoDetalhada: novaOcorrencia.descricao_detalhada,
+        equipe: novaOcorrencia.equipe,
+        area: novaOcorrencia.area,
+        vitimas_fatais: novaOcorrencia.vitimas_fatais,
+        vitimas_feridas: novaOcorrencia.vitimas_feridas,
+        horarioAcionamento: novaOcorrencia.hora_acionamento,
+        horarioSaida: novaOcorrencia.hora_saida,
+        horarioChegada: novaOcorrencia.hora_chegada,
+        horarioTermino: novaOcorrencia.hora_termino,
+        horarioRetorno: novaOcorrencia.hora_retorno,
+        viaturas: novaOcorrencia.viaturas ? [novaOcorrencia.viaturas] : [],
+        bombeirosEnvolvidos: novaOcorrencia.bombeiros_envolvidos || [],
+        equipamentosUtilizados: novaOcorrencia.equipamentos_utilizados || []
+      };
+
+      // Adicionar à lista local
+      setOcorrencias(prevOcorrencias => [ocorrenciaLegacy, ...prevOcorrencias]);
       
       // Mostrar mensagem de sucesso
-      alert(`Ocorrência #${newId} registrada com sucesso!\n\nTítulo: ${ocorrenciaToAdd.titulo}\nTipo: ${ocorrenciaToAdd.tipo}\nData/Hora: ${ocorrenciaToAdd.dataOcorrencia} às ${ocorrenciaToAdd.horaOcorrencia}`);
+      alert(`Ocorrência registrada com sucesso!\n\nTítulo: ${novaOcorrencia.titulo}\nTipo: ${novaOcorrencia.tipo}\nData/Hora: ${formatDateForDisplay(novaOcorrencia.data_ocorrencia)} às ${novaOcorrencia.hora_ocorrencia}`);
       
       // Fechar modal
       closeAddModal();
       
     } catch (error) {
       console.error('Erro ao registrar ocorrência:', error);
-      alert('Erro interno ao registrar a ocorrência. Tente novamente.');
+      alert('Erro ao registrar a ocorrência. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -547,159 +644,339 @@ export default function OcorrenciasPage() {
               </div>
             </div>
 
-            {/* Lista de Ocorrências */}
-            <div className="bg-pure-white rounded-lg shadow-sm border border-fog-gray/20 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-fog-gray/10 border-b border-fog-gray/20">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Tipo de Ocorrência</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Equipe</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Data/Hora da Ocorrência</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-coal-black">Ações</th>
-                  </tr>
-                </thead>
-                  <tbody className="divide-y divide-fog-gray/10">
-                    {filteredOcorrencias.map((ocorrencia) => (
-                      <tr key={ocorrencia.id} className="hover:bg-fog-gray/5 transition-colors duration-150">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            {getTipoIcon(ocorrencia.tipo)}
-                            <span className="text-sm font-medium text-coal-black">{ocorrencia.tipo}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-coal-black">{ocorrencia.equipe || 'Não informado'}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-coal-black">
-                            <div>{ocorrencia.dataOcorrencia}</div>
-                            <div className="text-coal-black/60">{ocorrencia.horaOcorrencia}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => openModal(ocorrencia)}
-                              className="text-gray-500 hover:text-blue-600 p-1 rounded transition-all duration-200"
-                              title="Ver detalhes"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                               onClick={exportToPDF}
-                               className="text-red-500 hover:text-red-700 p-1 rounded transition-all duration-200"
-                               title="Exportar PDF"
-                             >
-                               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                                 <text x="12" y="16" fontSize="6" textAnchor="middle" fill="white">PDF</text>
-                               </svg>
-                             </button>
-                             <button
-                               onClick={exportToExcel}
-                               className="text-green-600 hover:text-green-800 p-1 rounded transition-all duration-200"
-                               title="Exportar Excel"
-                             >
-                               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                                 <text x="12" y="16" fontSize="5" textAnchor="middle" fill="white">XLS</text>
-                               </svg>
-                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-                {filteredOcorrencias.length === 0 && (
-                  <div className="text-center py-12">
-                    <AlertTriangle className="w-12 h-12 text-coal-black/30 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-coal-black mb-2">Nenhuma ocorrência encontrada</h3>
-                    <p className="text-coal-black/60">Tente ajustar os filtros ou adicionar uma nova ocorrência.</p>
-                  </div>
-                )}
-              </div>
+            {/* Título do Histórico */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-coal-black flex items-center gap-3">
+                <div className="w-1 h-8 bg-gradient-to-b from-radiant-orange to-radiant-orange/70 rounded-full"></div>
+                Histórico de ocorrências da SCI
+              </h2>
+              <p className="text-coal-black/60 mt-2 ml-7">
+                Registro completo de todas as ocorrências atendidas pela Seção Contra Incêndio
+              </p>
             </div>
+
+            {/* Lista de Ocorrências - Design Moderno */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredOcorrencias.map((ocorrencia) => (
+                <div 
+                  key={ocorrencia.id} 
+                  className="bg-white rounded-2xl p-6 shadow-lg border border-fog-gray/10 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group animate-scaleIn"
+                  onClick={() => openModal(ocorrencia)}
+                >
+                  {/* Cabeçalho do Card */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-radiant-orange/10 to-radiant-orange/5 rounded-xl p-3 group-hover:from-radiant-orange/20 group-hover:to-radiant-orange/10 transition-all duration-300">
+                        {getTipoIcon(ocorrencia.tipo, 'w-6 h-6')}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-coal-black text-lg line-clamp-1">{ocorrencia.titulo}</h3>
+                        <p className="text-sm text-coal-black/60">{ocorrencia.tipo}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(ocorrencia.status)}`}>
+                        {ocorrencia.status}
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPrioridadeColor(ocorrencia.prioridade)}`}>
+                        {ocorrencia.prioridade}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Informações Principais */}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-coal-black/70">
+                      <MapPin className="w-4 h-4 text-radiant-orange" />
+                      <span className="line-clamp-1">{ocorrencia.endereco}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-coal-black/70">
+                      <Calendar className="w-4 h-4 text-radiant-orange" />
+                      <span>{ocorrencia.dataOcorrencia} às {ocorrencia.horaOcorrencia}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-coal-black/70">
+                      <Users className="w-4 h-4 text-radiant-orange" />
+                      <span>{ocorrencia.equipe || 'Não informado'}</span>
+                    </div>
+                  </div>
+
+                  {/* Descrição */}
+                  <div className="mb-4">
+                    <p className="text-sm text-coal-black/80 line-clamp-2">{ocorrencia.descricao}</p>
+                  </div>
+
+                  {/* Estatísticas */}
+                  <div className="flex items-center justify-between pt-4 border-t border-fog-gray/20">
+                    <div className="flex items-center gap-4">
+                      {((ocorrencia.vitimas_fatais || 0) > 0 || (ocorrencia.vitimas_feridas || 0) > 0) && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <span className="text-xs text-coal-black/60">
+                            {(ocorrencia.vitimas_fatais || 0) + (ocorrencia.vitimas_feridas || 0)} vítimas
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3 h-3 text-coal-black/40" />
+                        <span className="text-xs text-coal-black/60">{ocorrencia.tempoResposta}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportToPDF();
+                        }}
+                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
+                        title="Exportar PDF"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportToExcel();
+                        }}
+                        className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all duration-200"
+                        title="Exportar Excel"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Estado Vazio */}
+            {filteredOcorrencias.length === 0 && (
+              <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-fog-gray/10">
+                <div className="bg-gradient-to-br from-fog-gray/10 to-fog-gray/5 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+                  <AlertTriangle className="w-12 h-12 text-coal-black/30" />
+                </div>
+                <h3 className="text-xl font-bold text-coal-black mb-2">Nenhuma ocorrência encontrada</h3>
+                <p className="text-coal-black/60 mb-6">Tente ajustar os filtros ou adicionar uma nova ocorrência.</p>
+                <button
+                  onClick={openAddModal}
+                  className="px-6 py-3 bg-gradient-to-r from-radiant-orange to-radiant-orange/90 text-white rounded-xl font-semibold hover:from-radiant-orange/90 hover:to-radiant-orange transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  <Plus className="w-5 h-5 inline mr-2" />
+                  Adicionar Primeira Ocorrência
+                </button>
+              </div>
+            )}
           </div>
         </div>
         
-        {/* Modal de Detalhes */}
+        {/* Modal de Detalhes - Versão Moderna */}
         {isModalOpen && selectedOcorrencia && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-6">
-                  <h2 className="text-2xl font-bold text-coal-black">Detalhes da Ocorrência</h2>
-                  <button
-                    onClick={closeModal}
-                    className="text-coal-black/60 hover:text-coal-black transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-coal-black mb-2">Informações Básicas</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-coal-black/60">Título</label>
-                        <p className="font-medium text-coal-black">{selectedOcorrencia.titulo}</p>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div className="bg-gradient-to-br from-pure-white to-fog-gray/5 rounded-3xl max-w-5xl w-full max-h-[95vh] flex flex-col shadow-2xl border border-fog-gray/20 overflow-hidden animate-slideUp">
+              
+              {/* Cabeçalho Moderno */}
+              <div className="relative bg-gradient-to-r from-radiant-orange via-radiant-orange/90 to-orange-500 p-8">
+                <div className="absolute inset-0 bg-black/10"></div>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+                        {getTipoIcon(selectedOcorrencia.tipo, 'w-8 h-8 text-white')}
                       </div>
                       <div>
-                        <label className="text-sm text-coal-black/60">Tipo</label>
-                        <div className="flex items-center gap-2">
-                          {getTipoIcon(selectedOcorrencia.tipo)}
-                          <span className="font-medium text-coal-black">{selectedOcorrencia.tipo}</span>
+                        <h2 className="text-3xl font-bold text-white mb-2">Detalhes da Ocorrência</h2>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(selectedOcorrencia.status)} bg-white/20 backdrop-blur-sm border-white/30`}>
+                            {selectedOcorrencia.status}
+                          </span>
+                          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getPrioridadeColor(selectedOcorrencia.prioridade)} bg-white/20 backdrop-blur-sm border-white/30`}>
+                            {selectedOcorrencia.prioridade}
+                          </span>
                         </div>
                       </div>
-                      <div>
-                        <label className="text-sm text-coal-black/60">Prioridade</label>
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getPrioridadeColor(selectedOcorrencia.prioridade)}`}>
-                          {selectedOcorrencia.prioridade}
-                        </span>
+                    </div>
+                    <button
+                      onClick={closeModal}
+                      className="bg-white/20 backdrop-blur-sm rounded-xl p-3 text-white hover:bg-white/30 transition-all duration-200 hover:scale-110"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conteúdo Principal */}
+              <div className="flex-1 overflow-y-auto p-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  
+                  {/* Coluna Principal - Informações Básicas */}
+                  <div className="lg:col-span-2 space-y-6">
+                    
+                    {/* Card de Informações Básicas */}
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-fog-gray/10">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-3 h-3 bg-gradient-to-r from-radiant-orange to-orange-500 rounded-full"></div>
+                        <h3 className="text-xl font-bold text-coal-black">Informações Básicas</h3>
                       </div>
-                      <div>
-                        <label className="text-sm text-coal-black/60">Status</label>
-                        <span className={`inline-flex px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(selectedOcorrencia.status)}`}>
-                          {selectedOcorrencia.status}
-                        </span>
+                      
+                      <div className="space-y-4">
+                        <div className="bg-gradient-to-r from-fog-gray/5 to-transparent rounded-xl p-4">
+                          <label className="text-sm font-semibold text-coal-black/60 uppercase tracking-wide">Título</label>
+                          <p className="text-lg font-semibold text-coal-black mt-1">{selectedOcorrencia.titulo}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-r from-fog-gray/5 to-transparent rounded-xl p-4">
+                            <label className="text-sm font-semibold text-coal-black/60 uppercase tracking-wide">Tipo</label>
+                            <div className="flex items-center gap-2 mt-1">
+                              {getTipoIcon(selectedOcorrencia.tipo, 'w-5 h-5 text-radiant-orange')}
+                              <span className="font-semibold text-coal-black">{selectedOcorrencia.tipo}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gradient-to-r from-fog-gray/5 to-transparent rounded-xl p-4">
+                            <label className="text-sm font-semibold text-coal-black/60 uppercase tracking-wide">Responsável</label>
+                            <p className="font-semibold text-coal-black mt-1">{selectedOcorrencia.responsavel}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card de Localização e Tempo */}
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-fog-gray/10">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
+                        <h3 className="text-xl font-bold text-coal-black">Localização e Tempo</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-gradient-to-r from-blue-50 to-transparent rounded-xl p-4">
+                          <label className="text-sm font-semibold text-coal-black/60 uppercase tracking-wide">Endereço</label>
+                          <p className="font-semibold text-coal-black mt-1">{selectedOcorrencia.endereco}</p>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-blue-50 to-transparent rounded-xl p-4">
+                          <label className="text-sm font-semibold text-coal-black/60 uppercase tracking-wide">Data e Hora</label>
+                          <p className="font-semibold text-coal-black mt-1">{selectedOcorrencia.dataOcorrencia} às {selectedOcorrencia.horaOcorrencia}</p>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-blue-50 to-transparent rounded-xl p-4">
+                          <label className="text-sm font-semibold text-coal-black/60 uppercase tracking-wide">Tempo de Resposta</label>
+                          <p className="font-semibold text-coal-black mt-1">{selectedOcorrencia.tempoResposta}</p>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-blue-50 to-transparent rounded-xl p-4">
+                          <label className="text-sm font-semibold text-coal-black/60 uppercase tracking-wide">Equipes Envolvidas</label>
+                          <p className="font-semibold text-coal-black mt-1">{selectedOcorrencia.equipesEnvolvidas} equipe(s)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card de Descrição */}
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-fog-gray/10">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-green-600 rounded-full"></div>
+                        <h3 className="text-xl font-bold text-coal-black">Descrição</h3>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-green-50 to-transparent rounded-xl p-4">
+                        <p className="text-coal-black leading-relaxed">{selectedOcorrencia.descricao}</p>
                       </div>
                     </div>
                   </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-coal-black mb-2">Localização e Tempo</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-coal-black/60">Endereço</label>
-                        <p className="font-medium text-coal-black">{selectedOcorrencia.endereco}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-coal-black/60">Data e Hora</label>
-                        <p className="font-medium text-coal-black">{selectedOcorrencia.dataOcorrencia} às {selectedOcorrencia.horaOcorrencia}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-coal-black/60">Tempo de Resposta</label>
-                        <p className="font-medium text-coal-black">{selectedOcorrencia.tempoResposta}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-coal-black/60">Equipes Envolvidas</label>
-                        <p className="font-medium text-coal-black">{selectedOcorrencia.equipesEnvolvidas} equipe(s)</p>
+
+                  {/* Sidebar - Estatísticas e Informações Adicionais */}
+                  <div className="space-y-6">
+                    
+                    {/* Card de Status */}
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-fog-gray/10">
+                      <h3 className="text-lg font-bold text-coal-black mb-4">Status da Ocorrência</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-coal-black/60">Status Atual</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedOcorrencia.status)}`}>
+                            {selectedOcorrencia.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-coal-black/60">Prioridade</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPrioridadeColor(selectedOcorrencia.prioridade)}`}>
+                            {selectedOcorrencia.prioridade}
+                          </span>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Card de Cronologia */}
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-fog-gray/10">
+                      <h3 className="text-lg font-bold text-coal-black mb-4">Cronologia</h3>
+                      <div className="space-y-4">
+                        {selectedOcorrencia.cronologia && selectedOcorrencia.cronologia.length > 0 ? (
+                          selectedOcorrencia.cronologia.map((evento, index) => (
+                            <div key={index} className="flex items-start gap-3">
+                              <div className="w-2 h-2 bg-radiant-orange rounded-full mt-2 flex-shrink-0"></div>
+                              <div>
+                                <p className="text-sm font-semibold text-coal-black">{evento.hora}</p>
+                                <p className="text-sm text-coal-black/70">{evento.descricao}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-coal-black/60 italic">Nenhum evento registrado</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card de Vítimas */}
+                    {(selectedOcorrencia.vitimas || (selectedOcorrencia.vitimas_fatais || 0) > 0 || (selectedOcorrencia.vitimas_feridas || 0) > 0) && (
+                      <div className="bg-white rounded-2xl p-6 shadow-lg border border-fog-gray/10">
+                        <h3 className="text-lg font-bold text-coal-black mb-4">Vítimas</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-coal-black/60">Fatais</span>
+                            <span className="text-lg font-bold text-red-600">{selectedOcorrencia.vitimas_fatais || 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-coal-black/60">Feridas</span>
+                            <span className="text-lg font-bold text-orange-600">{selectedOcorrencia.vitimas_feridas || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Card de Recursos */}
+                    {selectedOcorrencia.recursos && selectedOcorrencia.recursos.length > 0 && (
+                      <div className="bg-white rounded-2xl p-6 shadow-lg border border-fog-gray/10">
+                        <h3 className="text-lg font-bold text-coal-black mb-4">Recursos Utilizados</h3>
+                        <div className="space-y-2">
+                          {selectedOcorrencia.recursos.map((recurso, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <span className="text-sm text-coal-black">{recurso}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-coal-black mb-2">Responsável</h3>
-                    <p className="font-medium text-coal-black">{selectedOcorrencia.responsavel}</p>
+                </div>
+              </div>
+
+              {/* Rodapé com Ações */}
+              <div className="bg-gradient-to-r from-fog-gray/5 to-transparent p-6 border-t border-fog-gray/20">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-coal-black/60">
+                    Última atualização: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-coal-black mb-2">Descrição</h3>
-                    <p className="text-coal-black">{selectedOcorrencia.descricao}</p>
+                  <div className="flex gap-3">
+                    <button className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                      Editar
+                    </button>
+                    <button 
+                      onClick={closeModal}
+                      className="px-6 py-2 bg-gradient-to-r from-fog-gray/20 to-fog-gray/30 text-coal-black rounded-xl font-semibold hover:from-fog-gray/30 hover:to-fog-gray/40 transition-all duration-200"
+                    >
+                      Fechar
+                    </button>
                   </div>
                 </div>
               </div>
@@ -746,32 +1023,73 @@ export default function OcorrenciasPage() {
                 
                 {/* Seção Informações Básicas */}
                 <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-5 mb-4 shadow-sm">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
+                    Informações Básicas
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Aeroporto *</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Título da Ocorrência *</label>
+                      <input
+                        type="text"
+                        value={newOcorrencia.titulo || ''}
+                        onChange={(e) => updateNewOcorrenciaField('titulo', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
+                        placeholder="Digite o título da ocorrência"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Tipo de Ocorrência *</label>
                       <select
-                        value={newOcorrencia.aeroporto || ''}
-                        onChange={(e) => updateNewOcorrenciaField('aeroporto', e.target.value)}
+                        value={newOcorrencia.tipo || ''}
+                        onChange={(e) => updateNewOcorrenciaField('tipo', e.target.value)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                       >
-                        <option value="">Selecione um aeroporto</option>
-                        <option value="Aeroporto Internacional de Brasília">Aeroporto Internacional de Brasília (BSB)</option>
-                <option value="Aeroporto Internacional de Guarulhos">Aeroporto Internacional de Guarulhos (GRU)</option>
-                <option value="Aeroporto Santos Dumont">Aeroporto Santos Dumont (SDU)</option>
-                <option value="Aeroporto Internacional do Galeão">Aeroporto Internacional do Galeão (GIG)</option>
-                <option value="Aeroporto de Congonhas">Aeroporto de Congonhas (CGH)</option>
-                <option value="Aeroporto Internacional de Salvador">Aeroporto Internacional de Salvador (SSA)</option>
-                <option value="Aeroporto Internacional de Recife">Aeroporto Internacional de Recife (REC)</option>
-                <option value="Aeroporto Internacional de Fortaleza">Aeroporto Internacional de Fortaleza (FOR)</option>
+                        <option value="">Selecione o tipo</option>
+                        {TIPOS_OCORRENCIA.map(tipo => (
+                          <option key={tipo} value={tipo}>{tipo}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Data/Hora da Ocorrência *</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Prioridade *</label>
+                      <select
+                        value={newOcorrencia.prioridade || ''}
+                        onChange={(e) => updateNewOcorrenciaField('prioridade', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
+                      >
+                        <option value="">Selecione a prioridade</option>
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média">Média</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Crítica">Crítica</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Endereço/Local *</label>
                       <input
-                        type="datetime-local"
-                        step="60"
-                        value={newOcorrencia.data || ''}
-                        onChange={(e) => updateNewOcorrenciaField('data', e.target.value)}
+                        type="text"
+                        value={newOcorrencia.endereco || ''}
+                        onChange={(e) => updateNewOcorrenciaField('endereco', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
+                        placeholder="Digite o endereço ou local da ocorrência"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Data da Ocorrência *</label>
+                      <input
+                        type="date"
+                        value={newOcorrencia.data_ocorrencia || ''}
+                        onChange={(e) => updateNewOcorrenciaField('data_ocorrencia', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Hora da Ocorrência *</label>
+                      <input
+                        type="time"
+                        value={newOcorrencia.hora_ocorrencia || ''}
+                        onChange={(e) => updateNewOcorrenciaField('hora_ocorrencia', e.target.value)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                       />
                     </div>
@@ -783,54 +1101,83 @@ export default function OcorrenciasPage() {
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                       >
                         <option value="">Selecione uma equipe</option>
-                        <option value="Equipe Alpha">Equipe Alpha</option>
-                <option value="Equipe Bravo">Equipe Bravo</option>
-                <option value="Equipe Charlie">Equipe Charlie</option>
-                <option value="Equipe Delta">Equipe Delta</option>
+                        {EQUIPES.map(equipe => (
+                          <option key={equipe} value={equipe}>{equipe}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Bombeiros Envolvidos *</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Área do Evento</label>
+                      <input
+                        type="text"
+                        value={newOcorrencia.area || ''}
+                        onChange={(e) => updateNewOcorrenciaField('area', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
+                        placeholder="Digite a área do evento"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Descrição *</label>
+                      <textarea
+                        value={newOcorrencia.descricao || ''}
+                        onChange={(e) => updateNewOcorrenciaField('descricao', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 min-h-[100px]"
+                        placeholder="Descreva a ocorrência..."
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Seção de Recursos */}
+                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-5 mb-4 shadow-sm">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
+                    Recursos Utilizados
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Viaturas</label>
+                      <input
+                        type="text"
+                        value={newOcorrencia.viaturas || ''}
+                        onChange={(e) => updateNewOcorrenciaField('viaturas', e.target.value)}
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
+                        placeholder="Ex: ABT-01, ABT-02"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-coal-black mb-2">Bombeiros Envolvidos</label>
                       <div className="space-y-3">
                         <div className="flex gap-2">
-                          <select
-                            value={''}
-                            onChange={(e) => {
-                              if (e.target.value && !newOcorrencia.bombeirosEnvolvidos?.includes(e.target.value)) {
-                                const bombeiros = newOcorrencia.bombeirosEnvolvidos || [];
-                                updateNewOcorrenciaField('bombeirosEnvolvidos', [...bombeiros, e.target.value]);
+                          <input
+                            type="text"
+                            placeholder="Nome do bombeiro"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                const nome = e.currentTarget.value.trim();
+                                const bombeiros = newOcorrencia.bombeiros_envolvidos || [];
+                                if (!bombeiros.includes(nome)) {
+                                  updateNewOcorrenciaField('bombeiros_envolvidos', [...bombeiros, nome]);
+                                }
+                                e.currentTarget.value = '';
                               }
-                              e.target.value = '';
                             }}
                             className="flex-1 px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
-                          >
-                            <option value="">Adicionar bombeiro</option>
-                            <option value="João Silva">👨‍🚒 João Silva (Equipe Alpha)</option>
-                            <option value="Maria Santos">👩‍🚒 Maria Santos (Equipe Alpha)</option>
-                            <option value="Pedro Costa">👨‍🚒 Pedro Costa (Equipe Alpha)</option>
-                            <option value="Ana Oliveira">👩‍🚒 Ana Oliveira (Equipe Bravo)</option>
-                            <option value="Carlos Lima">👨‍🚒 Carlos Lima (Equipe Bravo)</option>
-                            <option value="Lucia Ferreira">👩‍🚒 Lucia Ferreira (Equipe Bravo)</option>
-                            <option value="Roberto Alves">👨‍🚒 Roberto Alves (Equipe Charlie)</option>
-                            <option value="Fernanda Rocha">👩‍🚒 Fernanda Rocha (Equipe Charlie)</option>
-                            <option value="Marcos Pereira">👨‍🚒 Marcos Pereira (Equipe Charlie)</option>
-                            <option value="Juliana Souza">👩‍🚒 Juliana Souza (Equipe Delta)</option>
-                            <option value="Rafael Martins">👨‍🚒 Rafael Martins (Equipe Delta)</option>
-                            <option value="Camila Barbosa">👩‍🚒 Camila Barbosa (Equipe Delta)</option>
-                          </select>
+                          />
                         </div>
-                        {newOcorrencia.bombeirosEnvolvidos && newOcorrencia.bombeirosEnvolvidos.length > 0 && (
+                        {newOcorrencia.bombeiros_envolvidos && newOcorrencia.bombeiros_envolvidos.length > 0 && (
                           <div className="space-y-2">
                             <p className="text-sm text-gray-600">Bombeiros selecionados:</p>
                             <div className="flex flex-wrap gap-2">
-                              {newOcorrencia.bombeirosEnvolvidos.map((bombeiro, index) => (
+                              {newOcorrencia.bombeiros_envolvidos.map((bombeiro, index) => (
                                 <div key={index} className="flex items-center bg-radiant-orange/10 text-radiant-orange px-3 py-2 rounded-lg border border-radiant-orange/20">
                                   <span className="text-sm font-medium">👨‍🚒 {bombeiro}</span>
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      const bombeiros = newOcorrencia.bombeirosEnvolvidos?.filter((_, i) => i !== index) || [];
-                                      updateNewOcorrenciaField('bombeirosEnvolvidos', bombeiros);
+                                      const bombeiros = newOcorrencia.bombeiros_envolvidos?.filter((_, i) => i !== index) || [];
+                                      updateNewOcorrenciaField('bombeiros_envolvidos', bombeiros);
                                     }}
                                     className="ml-2 text-radiant-orange hover:text-red-600 transition-colors"
                                   >
@@ -843,36 +1190,6 @@ export default function OcorrenciasPage() {
                         )}
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Área do Evento *</label>
-                      <input
-                        type="text"
-                        value={newOcorrencia.area || ''}
-                        onChange={(e) => updateNewOcorrenciaField('area', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
-                        placeholder="Digite a área do evento"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Tipo de Ocorrência *</label>
-                      <select
-                        value={newOcorrencia.tipo || ''}
-                        onChange={(e) => updateNewOcorrenciaField('tipo', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
-                      >
-                        <option value="">Selecione o tipo</option>
-                        <option value="Atendimento à Aeronave Presidencial">Atendimento à Aeronave Presidencial</option>
-                <option value="Condições de Baixa Visibilidade">Condições de Baixa Visibilidade</option>
-                <option value="Emergências Médicas em Geral">Emergências Médicas em Geral</option>
-                <option value="Iluminação de Emergência em Pista de Pouso e Decolagem">Iluminação de Emergência em Pista de Pouso e Decolagem</option>
-                <option value="Incêndio em Instalações Aeroportuárias">Incêndio em Instalações Aeroportuárias</option>
-                <option value="Incêndios Florestais ou em Áreas de Cobertura Vegetal Próximas ao Aeródromo">Incêndios Florestais ou em Áreas de Cobertura Vegetal Próximas ao Aeródromo</option>
-                <option value="Incêndios ou Vazamentos de Combustíveis no PAA">Incêndios ou Vazamentos de Combustíveis no PAA</option>
-                <option value="Ocorrência aeronáutica">Ocorrência aeronáutica</option>
-                <option value="Ocorrências com Artigos Perigosos">Ocorrências com Artigos Perigosos</option>
-                <option value="Remoção de Animais e Dispersão de Avifauna">Remoção de Animais e Dispersão de Avifauna</option>
-                      </select>
-                    </div>
                   </div>
                 </div>
                 
@@ -881,17 +1198,17 @@ export default function OcorrenciasPage() {
                 {/* Seção de Vítimas */}
                 <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-5 mb-4 shadow-sm">
                   <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
-              <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
-              Vítimas
-            </h3>
+                    <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
+                    Vítimas
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-semibold text-coal-black mb-2">Vítimas Fatais</label>
                       <input
                         type="number"
                         min="0"
-                        value={newOcorrencia.vitimasFatais || ''}
-                        onChange={(e) => updateNewOcorrenciaField('vitimasFatais', parseInt(e.target.value) || 0)}
+                        value={newOcorrencia.vitimas_fatais || ''}
+                        onChange={(e) => updateNewOcorrenciaField('vitimas_fatais', parseInt(e.target.value) || 0)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                         placeholder="0"
                       />
@@ -901,8 +1218,8 @@ export default function OcorrenciasPage() {
                       <input
                         type="number"
                         min="0"
-                        value={newOcorrencia.vitimasFeridas || ''}
-                        onChange={(e) => updateNewOcorrenciaField('vitimasFeridas', parseInt(e.target.value) || 0)}
+                        value={newOcorrencia.vitimas_feridas || ''}
+                        onChange={(e) => updateNewOcorrenciaField('vitimas_feridas', parseInt(e.target.value) || 0)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                         placeholder="0"
                       />
@@ -922,8 +1239,8 @@ export default function OcorrenciasPage() {
                       <input
                         type="time"
                         step="60"
-                        value={newOcorrencia.horaAcionamento || ''}
-                        onChange={(e) => updateNewOcorrenciaField('horaAcionamento', e.target.value)}
+                        value={newOcorrencia.hora_acionamento || ''}
+                        onChange={(e) => updateNewOcorrenciaField('hora_acionamento', e.target.value)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                       />
                     </div>
@@ -932,8 +1249,8 @@ export default function OcorrenciasPage() {
                       <input
                         type="time"
                         step="60"
-                        value={newOcorrencia.horaSaida || ''}
-                        onChange={(e) => updateNewOcorrenciaField('horaSaida', e.target.value)}
+                        value={newOcorrencia.hora_saida || ''}
+                        onChange={(e) => updateNewOcorrenciaField('hora_saida', e.target.value)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                       />
                     </div>
@@ -942,8 +1259,8 @@ export default function OcorrenciasPage() {
                       <input
                         type="time"
                         step="60"
-                        value={newOcorrencia.horaChegada || ''}
-                        onChange={(e) => updateNewOcorrenciaField('horaChegada', e.target.value)}
+                        value={newOcorrencia.hora_chegada || ''}
+                        onChange={(e) => updateNewOcorrenciaField('hora_chegada', e.target.value)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                       />
                     </div>
@@ -952,8 +1269,8 @@ export default function OcorrenciasPage() {
                       <input
                         type="time"
                         step="60"
-                        value={newOcorrencia.horaTermino || ''}
-                        onChange={(e) => updateNewOcorrenciaField('horaTermino', e.target.value)}
+                        value={newOcorrencia.hora_termino || ''}
+                        onChange={(e) => updateNewOcorrenciaField('hora_termino', e.target.value)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                       />
                     </div>
@@ -962,8 +1279,8 @@ export default function OcorrenciasPage() {
                       <input
                         type="time"
                         step="60"
-                        value={newOcorrencia.horaRetorno || ''}
-                        onChange={(e) => updateNewOcorrenciaField('horaRetorno', e.target.value)}
+                        value={newOcorrencia.hora_retorno || ''}
+                        onChange={(e) => updateNewOcorrenciaField('hora_retorno', e.target.value)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                       />
                     </div>
@@ -971,9 +1288,9 @@ export default function OcorrenciasPage() {
                       <label className="block text-sm font-semibold text-coal-black mb-2">Tempo Gasto na Ocorrência</label>
                       <div className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl bg-gray-50 text-gray-700 font-medium">
                         {(() => {
-                          if (newOcorrencia.horaAcionamento && newOcorrencia.horaRetorno) {
-                            const inicio = new Date(`2000-01-01T${newOcorrencia.horaAcionamento}:00`);
-                            const fim = new Date(`2000-01-01T${newOcorrencia.horaRetorno}:00`);
+                          if (newOcorrencia.hora_acionamento && newOcorrencia.hora_retorno) {
+                            const inicio = new Date(`2000-01-01T${newOcorrencia.hora_acionamento}:00`);
+                            const fim = new Date(`2000-01-01T${newOcorrencia.hora_retorno}:00`);
                             const diffMs = fim.getTime() - inicio.getTime();
                             const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
                             const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -1007,8 +1324,8 @@ export default function OcorrenciasPage() {
                       <label className="block text-sm font-semibold text-coal-black mb-2">Equipamentos</label>
                       <input
                         type="text"
-                        value={Array.isArray(newOcorrencia.equipamentosUtilizados) ? newOcorrencia.equipamentosUtilizados.join(', ') : (newOcorrencia.equipamentosUtilizados || '')}
-                        onChange={(e) => updateNewOcorrenciaField('equipamentosUtilizados', e.target.value)}
+                        value={Array.isArray(newOcorrencia.equipamentos_utilizados) ? newOcorrencia.equipamentos_utilizados.join(', ') : (newOcorrencia.equipamentos_utilizados || '')}
+                        onChange={(e) => updateNewOcorrenciaField('equipamentos_utilizados', e.target.value)}
                         className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
                         placeholder="Ex: Mangueiras, EPIs, Desencarcerador"
                       />
@@ -1036,8 +1353,8 @@ export default function OcorrenciasPage() {
                     <div>
                       <label className="block text-sm font-semibold text-coal-black mb-2">Descrição Complementar da Ocorrência</label>
                       <textarea
-                        value={newOcorrencia.descricaoDetalhada || ''}
-                        onChange={(e) => updateNewOcorrenciaField('descricaoDetalhada', e.target.value)}
+                        value={newOcorrencia.descricao_detalhada || ''}
+                        onChange={(e) => updateNewOcorrenciaField('descricao_detalhada', e.target.value)}
                         className="w-full px-4 py-3 border-2 border-fog-gray/40 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 resize-vertical bg-white"
                         placeholder="Forneça uma descrição mais detalhada da ocorrência..."
                         rows={4}
