@@ -80,7 +80,7 @@ export class DocumentoService {
       const documentoData: DocumentoInsert = {
         bombeiro_id: bombeiroId,
         nome_original: file.name,
-        nome_personalizado: customName || null,
+        nome_personalizado: customName || undefined,
         tipo_documento: file.type || 'application/octet-stream',
         tamanho: file.size,
         url_arquivo: publicUrl,

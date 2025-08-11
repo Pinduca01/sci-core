@@ -47,6 +47,150 @@ export type Database = {
           updated_at?: string
         }
       }
+      bombeiros: {
+        Row: {
+          id: number
+          nome: string
+          email: string
+          telefone?: string
+          cargo?: string
+          equipe?: string
+          data_admissao?: string
+          status: string
+          user_id?: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          nome: string
+          email: string
+          telefone?: string
+          cargo?: string
+          equipe?: string
+          data_admissao?: string
+          status?: string
+          user_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          nome?: string
+          email?: string
+          telefone?: string
+          cargo?: string
+          equipe?: string
+          data_admissao?: string
+          status?: string
+          user_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      documentos: {
+        Row: {
+          id: string
+          bombeiro_id: string
+          nome_original: string
+          nome_personalizado?: string
+          tipo_documento: string
+          tamanho: number
+          url_arquivo: string
+          storage_path: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          bombeiro_id: string
+          nome_original: string
+          nome_personalizado?: string
+          tipo_documento: string
+          tamanho: number
+          url_arquivo: string
+          storage_path: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          bombeiro_id?: string
+          nome_original?: string
+          nome_personalizado?: string
+          tipo_documento?: string
+          tamanho?: number
+          url_arquivo?: string
+          storage_path?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      ocorrencias: {
+        Row: {
+          id: number
+          numero_ocorrencia: string
+          data_ocorrencia: string
+          hora_ocorrencia: string
+          tipo_ocorrencia: string
+          endereco: string
+          bairro?: string
+          cidade: string
+          cep?: string
+          descricao?: string
+          status: string
+          prioridade?: string
+          vitimas_fatais?: number
+          vitimas_feridas?: number
+          danos_materiais?: string
+          observacoes?: string
+          bombeiro_responsavel?: string
+          equipe_responsavel?: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          numero_ocorrencia: string
+          data_ocorrencia: string
+          hora_ocorrencia: string
+          tipo_ocorrencia: string
+          endereco: string
+          bairro?: string
+          cidade: string
+          cep?: string
+          descricao?: string
+          status?: string
+          prioridade?: string
+          vitimas_fatais?: number
+          vitimas_feridas?: number
+          danos_materiais?: string
+          observacoes?: string
+          bombeiro_responsavel?: string
+          equipe_responsavel?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          numero_ocorrencia?: string
+          data_ocorrencia?: string
+          hora_ocorrencia?: string
+          tipo_ocorrencia?: string
+          endereco?: string
+          bairro?: string
+          cidade?: string
+          cep?: string
+          descricao?: string
+          status?: string
+          prioridade?: string
+          vitimas_fatais?: number
+          vitimas_feridas?: number
+          danos_materiais?: string
+          observacoes?: string
+          bombeiro_responsavel?: string
+          equipe_responsavel?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
       bombeiros_documentos: {
         Row: {
           id: string
