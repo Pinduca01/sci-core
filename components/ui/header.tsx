@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronDownIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { signOut } from '@/lib/auth';
 
 interface HeaderProps {
   userName: string;
@@ -10,10 +12,20 @@ interface HeaderProps {
 
 export default function Header({ userName, userEmail }: HeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
 
-  const handleLogout = () => {
-    // Implementar lógica de logout aqui
-    console.log('Logout clicked');
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      alert('Erro ao fazer logout. Tente novamente.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleSettings = () => {
@@ -65,10 +77,11 @@ export default function Header({ userName, userEmail }: HeaderProps) {
 
                   <button
                     onClick={handleLogout}
-                    className="flex items-center w-full px-4 py-2 text-sm font-poppins text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200"
+                    disabled={isLoggingOut}
+                    className="flex items-center w-full px-4 py-2 text-sm font-poppins text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ArrowRightOnRectangleIcon className="w-4 h-4 mr-3 text-red-500" />
-                    Sair
+                    {isLoggingOut ? 'Saindo...' : 'Sair'}
                   </button>
                 </div>
               )}
