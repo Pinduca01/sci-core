@@ -164,25 +164,29 @@ export default function PessoalPage() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
-          // Buscar dados do perfil do usuário
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('full_name, email')
-            .eq('id', user.id)
-            .single();
+          // Usar dados básicos do auth para evitar recursão RLS
+          setUserData({
+            userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+            userEmail: user.email || 'email@exemplo.com'
+          });
+          
+          // Tentar buscar dados do perfil como fallback (sem bloquear a UI)
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', user.id)
+              .single();
 
-          if (error) {
-            console.error('Erro ao carregar perfil:', error);
-            // Usar dados básicos do auth se não encontrar perfil
-            setUserData({
-              userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
-              userEmail: user.email || 'email@exemplo.com'
-            });
-          } else {
-            setUserData({
-              userName: profile.full_name || user.email?.split('@')[0] || 'Usuário',
-              userEmail: profile.email || user.email || 'email@exemplo.com'
-            });
+            if (profile && profile.full_name) {
+              setUserData({
+                userName: profile.full_name,
+                userEmail: profile.email || user.email || 'email@exemplo.com'
+              });
+            }
+          } catch (profileError) {
+            // Ignorar erro de perfil e manter dados do auth
+            console.log('Perfil não encontrado, usando dados do auth');
           }
         }
       } catch (error) {

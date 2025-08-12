@@ -21,6 +21,10 @@ module.exports = {
       animation: {
         'gradient-slow': 'gradient-shift 25s ease-in-out infinite',
         'shake': 'shake 0.5s ease-in-out',
+        'fadeIn': 'fadeIn 0.3s ease-out',
+        'slideUp': 'slideUp 0.4s ease-out',
+        'slideDown': 'slideDown 0.3s ease-out',
+        'scaleIn': 'scaleIn 0.2s ease-out',
       },
       keyframes: {
         'gradient-shift': {
@@ -35,6 +39,40 @@ module.exports = {
           '0%, 100%': { transform: 'translateX(0)' },
           '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-2px)' },
           '20%, 40%, 60%, 80%': { transform: 'translateX(2px)' },
+        },
+        'fadeIn': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slideUp': {
+          '0%': { 
+            opacity: '0',
+            transform: 'translateY(20px) scale(0.95)' 
+          },
+          '100%': { 
+            opacity: '1',
+            transform: 'translateY(0) scale(1)' 
+          },
+        },
+        'slideDown': {
+          '0%': { 
+            opacity: '0',
+            transform: 'translateY(-20px)' 
+          },
+          '100%': { 
+            opacity: '1',
+            transform: 'translateY(0)' 
+          },
+        },
+        'scaleIn': {
+          '0%': { 
+            opacity: '0',
+            transform: 'scale(0.9)' 
+          },
+          '100%': { 
+            opacity: '1',
+            transform: 'scale(1)' 
+          },
         },
       },
     },
