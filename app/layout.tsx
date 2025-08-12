@@ -34,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.variable} ${poppins.variable} ${montserrat.variable} font-inter`}>
+      <body className={`${inter.variable} ${poppins.variable} ${montserrat.variable} font-inter bg-pure-white text-coal-black`}>
         {children}
       </body>
     </html>

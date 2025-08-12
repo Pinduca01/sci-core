@@ -8,6 +8,13 @@
   --pure-white: #FFFFFF;
   --fog-gray: #F2F4F7;
   --coal-black: #141517;
+  
+  /* Dark mode variables */
+  --dark-bg: #0F0F0F;
+  --dark-surface: #1A1A1A;
+  --dark-border: #2A2A2A;
+  --dark-text: #E5E5E5;
+  --dark-text-secondary: #A3A3A3;
 }
 
 * {
@@ -28,6 +35,12 @@ body {
 body {
   color: var(--coal-black);
   background: var(--pure-white);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  color: var(--dark-text);
+  background: var(--dark-bg);
 }
 
 a {
@@ -47,6 +60,18 @@ a {
   );
   background-size: 400% 400%;
   animation: gradient-shift 25s ease-in-out infinite;
+  transition: background 0.3s ease;
+}
+
+.dark .gradient-bg {
+  background: linear-gradient(
+    135deg,
+    #FF4F18 0%,
+    #FF6B3D 25%,
+    #CC5A2E 50%,
+    #994429 75%,
+    #0F0F0F 100%
+  );
 }
 
 @keyframes gradient-shift {
@@ -92,12 +117,24 @@ a {
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   transition: all 150ms;
+  background: var(--pure-white);
+  color: var(--coal-black);
+}
+
+.dark .form-input {
+  background: var(--dark-surface);
+  color: var(--dark-text);
+  border-color: var(--dark-border);
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--radiant-orange);
   box-shadow: 0 0 0 3px rgba(255, 79, 24, 0.1);
+}
+
+.dark .form-input:focus {
+  box-shadow: 0 0 0 3px rgba(255, 79, 24, 0.2);
 }
 
 .btn-primary {

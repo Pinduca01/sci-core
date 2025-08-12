@@ -4,8 +4,8 @@ export interface Ocorrencia {
   id?: string;
   titulo: string;
   tipo: string;
+
   status: 'Aberta' | 'Em Andamento' | 'Resolvida' | 'Cancelada';
-  prioridade: 'Baixa' | 'Média' | 'Alta' | 'Crítica';
   data_ocorrencia: string;
   hora_ocorrencia: string;
   endereco: string;
@@ -26,11 +26,24 @@ export interface Ocorrencia {
   descricao_detalhada?: string;
   responsavel_id?: string;
   responsavel_nome?: string;
+  // Campos de localização e mapa
+  lat?: number;
+  lng?: number;
+  zoom?: number;
+  bearing?: number;
+  pitch?: number;
+  map_provider?: string;
+  snapshot_url?: string;
   created_at?: string;
   updated_at?: string;
 }
 
-export const TIPOS_OCORRENCIA = [
+// Tipos de ocorrência organizados hierarquicamente
+export const TIPOS_OCORRENCIA_AERONAUTICA = [
+  'Ocorrência aeronáutica'
+] as const;
+
+export const TIPOS_OCORRENCIA_NAO_AERONAUTICA = [
   'Atendimento à Aeronave Presidencial',
   'Condições de Baixa Visibilidade',
   'Emergências Médicas em Geral',
@@ -38,9 +51,14 @@ export const TIPOS_OCORRENCIA = [
   'Incêndio em Instalações Aeroportuárias',
   'Incêndios Florestais ou em Áreas de Cobertura Vegetal Próximas ao Aeródromo',
   'Incêndios ou Vazamentos de Combustíveis no PAA',
-  'Ocorrência aeronáutica',
   'Ocorrências com Artigos Perigosos',
   'Remoção de Animais e Dispersão de Avifauna'
+] as const;
+
+// Lista completa para compatibilidade
+export const TIPOS_OCORRENCIA = [
+  ...TIPOS_OCORRENCIA_AERONAUTICA,
+  ...TIPOS_OCORRENCIA_NAO_AERONAUTICA
 ] as const;
 
 export const EQUIPES = [
@@ -57,12 +75,7 @@ export const STATUS_OCORRENCIA = [
   'Cancelada'
 ] as const;
 
-export const PRIORIDADES = [
-  'Baixa',
-  'Média',
-  'Alta',
-  'Crítica'
-] as const;
+
 
 class OcorrenciaService {
   // Buscar todas as ocorrências

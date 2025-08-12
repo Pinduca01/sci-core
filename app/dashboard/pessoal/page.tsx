@@ -9,7 +9,7 @@ import { supabase, uploadDocumento, getDocumentosBombeiro, deleteDocumento, getD
 
 // Tipos para os dados
 interface Bombeiro {
-  id: number;
+  id: string; // UUID do Supabase
   nome: string;
   funcao: 'BA-GS' | 'BA-CE' | 'BA-LR' | 'BA-MC' | 'BA-2';
   matricula: string;
@@ -32,7 +32,7 @@ interface FileWithCustomName extends File {
 // Dados mockados
 const bombeirosMock: Bombeiro[] = [
   {
-    id: 1,
+    id: '1',
     nome: 'João Silva Santos',
     funcao: 'BA-GS',
     matricula: '1234',
@@ -46,7 +46,7 @@ const bombeirosMock: Bombeiro[] = [
     equipe: 'Alfa'
   },
   {
-    id: 2,
+    id: '2',
     nome: 'Maria Oliveira Costa',
     funcao: 'BA-CE',
     matricula: '5678',
@@ -60,7 +60,7 @@ const bombeirosMock: Bombeiro[] = [
     equipe: 'Bravo'
   },
   {
-    id: 3,
+    id: '3',
     nome: 'Carlos Roberto Lima',
     funcao: 'BA-LR',
     matricula: '9012',
@@ -74,7 +74,7 @@ const bombeirosMock: Bombeiro[] = [
     equipe: 'Charlie'
   },
   {
-    id: 4,
+    id: '4',
     nome: 'Ana Paula Ferreira',
     funcao: 'BA-MC',
     matricula: '3456',
@@ -88,7 +88,7 @@ const bombeirosMock: Bombeiro[] = [
     equipe: 'Delta'
   },
   {
-    id: 5,
+    id: '5',
     nome: 'Pedro Henrique Souza',
     funcao: 'BA-2',
     matricula: '7890',
@@ -116,8 +116,8 @@ export default function PessoalPage() {
   const [isDocListModalOpen, setIsDocListModalOpen] = useState(false);
   const [selectedBombeiroForDocs, setSelectedBombeiroForDocs] = useState<Bombeiro | null>(null);
   const [pendingFiles, setPendingFiles] = useState<FileWithCustomName[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<{[key: number]: DocumentoUpload[]}>({});
-  const [fileNames, setFileNames] = useState<{[key: number]: string}>({});
+  const [uploadedFiles, setUploadedFiles] = useState<{[key: string]: DocumentoUpload[]}>({});
+  const [fileNames, setFileNames] = useState<{[key: string]: string}>({});
   const [isUploading, setIsUploading] = useState(false);
   
   // Estados para edição
@@ -125,6 +125,12 @@ export default function PessoalPage() {
   const [editBombeiro, setEditBombeiro] = useState<Partial<Bombeiro>>({});
   const [isConfirmEquipeModalOpen, setIsConfirmEquipeModalOpen] = useState(false);
   const [newEquipe, setNewEquipe] = useState<'Alfa' | 'Bravo' | 'Charlie' | 'Delta'>('Alfa');
+  
+  // Estados para exclusão de bombeiro
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [bombeiroToDelete, setBombeiroToDelete] = useState<Bombeiro | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Estado para notificação
   const [notification, setNotification] = useState<{
@@ -246,11 +252,11 @@ export default function PessoalPage() {
 
   // Carregar documentos de todos os bombeiros
   const loadAllDocuments = async (bombeirosList: Bombeiro[]) => {
-    const documentsMap: {[key: number]: DocumentoUpload[]} = {};
+    const documentsMap: {[key: string]: DocumentoUpload[]} = {};
     const updatedBombeiros: Bombeiro[] = [];
     
     for (const bombeiro of bombeirosList) {
-      const { data: documentos } = await getDocumentosBombeiro(bombeiro.id);
+      const { data: documentos } = await getDocumentosBombeiro(Number(bombeiro.id));
       if (documentos) {
         documentsMap[bombeiro.id] = documentos;
         // Atualizar contador de documentos com o valor real
@@ -273,8 +279,8 @@ export default function PessoalPage() {
   };
 
   // Carregar documentos de um bombeiro específico
-  const loadBombeiroDocuments = async (bombeiroId: number) => {
-    const { data: documentos, error } = await getDocumentosBombeiro(bombeiroId);
+  const loadBombeiroDocuments = async (bombeiroId: string) => {
+    const { data: documentos, error } = await getDocumentosBombeiro(Number(bombeiroId));
     if (error) {
       console.error('Erro ao carregar documentos:', error);
       showNotification('Erro ao carregar documentos', 'error');
@@ -581,6 +587,97 @@ export default function PessoalPage() {
     }
   };
 
+  // Função para abrir modal de exclusão
+  const openDeleteModal = (bombeiro: Bombeiro) => {
+    setBombeiroToDelete(bombeiro);
+    setDeleteConfirmationText('');
+    setIsDeleteModalOpen(true);
+  };
+
+  // Função para fechar modal de exclusão
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setBombeiroToDelete(null);
+    setDeleteConfirmationText('');
+    setIsDeleting(false);
+  };
+
+  // Função para excluir bombeiro
+  const deleteBombeiro = async () => {
+    if (!bombeiroToDelete || isDeleting) return;
+
+    // Verificar se o texto de confirmação está correto
+    const expectedText = `EXCLUIR ${bombeiroToDelete.nome.toUpperCase()}`;
+    if (deleteConfirmationText !== expectedText) {
+      showNotification('Texto de confirmação incorreto. Digite exatamente: ' + expectedText, 'error');
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      // IMPORTANTE: As ocorrências em que o bombeiro participou são preservadas
+      // pois elas armazenam apenas o nome do bombeiro no campo 'bombeiros_envolvidos'
+      // como um array de texto, não como referência por ID.
+      
+      // 1. Primeiro, excluir todos os documentos do bombeiro
+      const { error: docsError } = await supabase
+        .from('documentos')
+        .delete()
+        .eq('bombeiro_id', bombeiroToDelete.id);
+
+      if (docsError) {
+        console.error('Erro ao excluir documentos:', docsError);
+        showNotification('Erro ao excluir documentos do bombeiro: ' + docsError.message, 'error');
+        setIsDeleting(false);
+        return;
+      }
+
+      // 2. Depois, excluir o bombeiro
+      // As ocorrências permanecem intactas com o nome do bombeiro preservado
+      const { error: bombeiroError } = await supabase
+        .from('bombeiros')
+        .delete()
+        .eq('id', bombeiroToDelete.id);
+
+      if (bombeiroError) {
+        console.error('Erro ao excluir bombeiro:', bombeiroError);
+        showNotification('Erro ao excluir bombeiro: ' + bombeiroError.message, 'error');
+        setIsDeleting(false);
+        return;
+      }
+
+      // 3. Atualizar estado local
+      setBombeiros(prev => prev.filter(b => b.id !== bombeiroToDelete.id));
+      
+      // 4. Limpar documentos do estado local
+      setUploadedFiles(prev => {
+        const newFiles = { ...prev };
+        delete newFiles[bombeiroToDelete.id];
+        return newFiles;
+      });
+
+      // 5. Fechar modal se o bombeiro excluído estava sendo visualizado
+      if (selectedBombeiro?.id === bombeiroToDelete.id) {
+        setSelectedBombeiro(null);
+        setIsModalOpen(false);
+      }
+
+      // 6. Fechar modal de edição se o bombeiro excluído estava sendo editado
+      if (editBombeiro.id === bombeiroToDelete.id) {
+        closeEditModal();
+      }
+
+      closeDeleteModal();
+      showNotification(`Bombeiro ${bombeiroToDelete.nome} foi excluído. Suas ocorrências foram preservadas no histórico.`, 'success');
+
+    } catch (error) {
+      console.error('Erro inesperado ao excluir bombeiro:', error);
+      showNotification('Erro inesperado ao excluir bombeiro.', 'error');
+      setIsDeleting(false);
+    }
+  };
+
   // Abrir modal de documentos
   const openDocModal = (bombeiro: Bombeiro) => {
     setSelectedBombeiroForDocs(bombeiro);
@@ -608,9 +705,9 @@ export default function PessoalPage() {
     setPendingFiles(prev => {
       const updatedFiles = prev.filter((_, index) => index !== fileIndex);
       // Recriar índices dos nomes dos arquivos
-      const newFileNames: {[key: number]: string} = {};
+      const newFileNames: {[key: string]: string} = {};
       updatedFiles.forEach((file, index) => {
-        newFileNames[index] = file.customName || file.name;
+        newFileNames[index.toString()] = file.customName || file.name;
       });
       setFileNames(newFileNames);
       return updatedFiles;
@@ -638,9 +735,9 @@ export default function PessoalPage() {
       setPendingFiles(prev => {
         const updatedFiles = [...prev, ...newFiles];
         // Inicializar nomes personalizados
-        const newFileNames: {[key: number]: string} = {};
+        const newFileNames: {[key: string]: string} = {};
         updatedFiles.forEach((file, index) => {
-          newFileNames[index] = file.customName || file.name;
+          newFileNames[index.toString()] = file.customName || file.name;
         });
         setFileNames(newFileNames);
         return updatedFiles;
@@ -652,7 +749,7 @@ export default function PessoalPage() {
   const updateFileName = (fileIndex: number, newName: string) => {
     setFileNames(prev => ({
       ...prev,
-      [fileIndex]: newName
+      [fileIndex.toString()]: newName
     }));
     
     setPendingFiles(prev => prev.map((file, index) => {
@@ -676,8 +773,8 @@ export default function PessoalPage() {
     
     try {
       const uploadPromises = pendingFiles.map(async (file, index) => {
-        const nomePersonalizado = fileNames[index] || file.customName || file.name;
-        return await uploadDocumento(selectedBombeiroForDocs.id, file, nomePersonalizado);
+        const nomePersonalizado = fileNames[index.toString()] || file.customName || file.name;
+        return await uploadDocumento(Number(selectedBombeiroForDocs.id), file, nomePersonalizado);
       });
 
       const results = await Promise.all(uploadPromises);
@@ -798,12 +895,12 @@ export default function PessoalPage() {
 
         <Header userName={userData.userName} userEmail={userData.userEmail} />
         
-        <div className="flex-1 bg-fog-gray/30 overflow-auto min-h-screen">
+        <div className="flex-1 bg-fog-gray/30 overflow-auto min-h-screen transition-colors duration-300">
           <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
             {/* Cabeçalho */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-coal-black mb-2">Gestão de Pessoal</h1>
-              <p className="text-coal-black/70">Controle completo do efetivo da corporação</p>
+              <h1 className="text-3xl font-bold text-coal-black mb-2 transition-colors duration-300">Gestão de Pessoal</h1>
+              <p className="text-coal-black/70 transition-colors duration-300">Controle completo do efetivo da corporação</p>
             </div>
             
             {/* Botão Adicionar */}
@@ -1072,13 +1169,22 @@ export default function PessoalPage() {
                   >
                     Fechar
                   </button>
-                  <button 
-                    onClick={() => openEditModal(selectedBombeiro)}
-                    className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-radiant-orange to-radiant-orange/80 text-pure-white rounded-xl hover:from-radiant-orange/90 hover:to-radiant-orange/70 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
-                  >
-                    <Edit className="w-5 h-5" />
-                    Editar
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => openDeleteModal(selectedBombeiro)}
+                      className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                      Excluir
+                    </button>
+                    <button 
+                      onClick={() => openEditModal(selectedBombeiro)}
+                      className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-radiant-orange to-radiant-orange/80 text-pure-white rounded-xl hover:from-radiant-orange/90 hover:to-radiant-orange/70 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
+                    >
+                      <Edit className="w-5 h-5" />
+                      Editar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1663,6 +1769,99 @@ export default function PessoalPage() {
                     className="flex-1 px-4 py-3 bg-gradient-to-r from-radiant-orange to-radiant-orange/80 text-pure-white rounded-lg hover:from-radiant-orange/90 hover:to-radiant-orange/70 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
                   >
                     Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Exclusão de Bombeiro */}
+        {isDeleteModalOpen && bombeiroToDelete && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-pure-white rounded-2xl shadow-2xl max-w-md w-full border border-red-200">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-red-500 to-red-600 p-6 rounded-t-2xl">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-white text-center mb-2">ATENÇÃO: Exclusão Permanente</h3>
+                <p className="text-white/90 text-sm text-center">Esta ação não pode ser desfeita</p>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <div className="text-center mb-6">
+                  <p className="text-coal-black mb-4">
+                    Você está prestes a excluir <strong className="text-red-600">{bombeiroToDelete.nome}</strong> e todos os seus dados permanentemente.
+                  </p>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <div className="text-left">
+                         <p className="text-red-800 font-semibold text-sm mb-1">Dados que serão excluídos:</p>
+                         <ul className="text-red-700 text-sm space-y-1">
+                           <li>• Informações pessoais e funcionais</li>
+                           <li>• Todos os documentos ({bombeiroToDelete.documentos} arquivos)</li>
+                           <li>• Registros administrativos</li>
+                         </ul>
+                         <p className="text-green-700 font-semibold text-sm mt-3 mb-1">Dados que serão preservados:</p>
+                         <ul className="text-green-700 text-sm space-y-1">
+                           <li>• Ocorrências em que participou (histórico)</li>
+                           <li>• Nome nas ocorrências como referência</li>
+                         </ul>
+                       </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-coal-black mb-2">
+                      Para confirmar, digite exatamente:
+                    </label>
+                    <div className="bg-gray-100 rounded-lg p-3 mb-3">
+                      <code className="text-sm font-mono text-red-600 font-bold">
+                        EXCLUIR {bombeiroToDelete.nome.toUpperCase()}
+                      </code>
+                    </div>
+                    <input
+                      type="text"
+                      value={deleteConfirmationText}
+                      onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors text-center font-mono"
+                      placeholder="Digite o texto de confirmação"
+                      disabled={isDeleting}
+                    />
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeDeleteModal}
+                    disabled={isDeleting}
+                    className="flex-1 px-4 py-3 text-coal-black/70 hover:text-coal-black font-medium transition-colors rounded-lg hover:bg-fog-gray/30 border border-fog-gray/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={deleteBombeiro}
+                    disabled={isDeleting || deleteConfirmationText !== `EXCLUIR ${bombeiroToDelete.nome.toUpperCase()}`}
+                    className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-500"
+                  >
+                    {isDeleting ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Excluindo...
+                      </div>
+                    ) : (
+                      'Excluir Permanentemente'
+                    )}
                   </button>
                 </div>
               </div>

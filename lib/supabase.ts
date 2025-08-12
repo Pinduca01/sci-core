@@ -137,7 +137,6 @@ export type Database = {
           cep?: string
           descricao?: string
           status: string
-          prioridade?: string
           vitimas_fatais?: number
           vitimas_feridas?: number
           danos_materiais?: string
@@ -158,7 +157,6 @@ export type Database = {
           cep?: string
           descricao?: string
           status?: string
-          prioridade?: string
           vitimas_fatais?: number
           vitimas_feridas?: number
           danos_materiais?: string
@@ -180,7 +178,6 @@ export type Database = {
           cep?: string
           descricao?: string
           status?: string
-          prioridade?: string
           vitimas_fatais?: number
           vitimas_feridas?: number
           danos_materiais?: string

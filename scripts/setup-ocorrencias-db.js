@@ -84,7 +84,6 @@ async function setupOcorrenciasDatabase() {
       titulo: 'Teste de Sistema - Ocorrência de Exemplo',
       tipo: 'Emergências Médicas em Geral',
       status: 'Resolvida',
-      prioridade: 'Média',
       data_ocorrencia: '2024-01-15',
       hora_ocorrencia: '14:30:00',
       endereco: 'Terminal de Passageiros - Aeroporto Internacional',

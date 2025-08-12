@@ -5,14 +5,13 @@ import { SidebarDemo } from '@/components/ui/sidebar-demo';
 import { useState, useEffect } from 'react';
 import { Search, Filter, FileText, AlertTriangle, Car, Flame, Users, Edit, X, Phone, Mail, MapPin, Calendar, DollarSign, Plus, Upload, Trash2, UserPlus, Eye, Clock, CheckCircle, XCircle, AlertCircle, Brain, Send, Loader2, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { ocorrenciaService, Ocorrencia, TIPOS_OCORRENCIA, EQUIPES, STATUS_OCORRENCIA, PRIORIDADES } from '@/lib/services/ocorrenciaService';
+import { ocorrenciaService, Ocorrencia, TIPOS_OCORRENCIA, EQUIPES, STATUS_OCORRENCIA } from '@/lib/services/ocorrenciaService';
 
 // Interface para compatibilidade com o código existente
 interface OcorrenciaLegacy {
   id: string;
   titulo: string;
   tipo: string;
-  prioridade: 'Baixa' | 'Média' | 'Alta' | 'Crítica';
   status: 'Aberta' | 'Em Andamento' | 'Resolvida' | 'Cancelada';
   endereco: string;
   dataOcorrencia: string;
@@ -69,7 +68,7 @@ export default function OcorrenciasPage() {
   const [newOcorrencia, setNewOcorrencia] = useState<Partial<Ocorrencia>>({
     titulo: '',
     tipo: TIPOS_OCORRENCIA[0],
-    prioridade: 'Média',
+
     status: 'Aberta',
     endereco: '',
     data_ocorrencia: '',
@@ -143,7 +142,7 @@ export default function OcorrenciasPage() {
           id: ocorrencia.id || '',
           titulo: ocorrencia.titulo,
           tipo: ocorrencia.tipo,
-          prioridade: ocorrencia.prioridade,
+    
           status: ocorrencia.status,
           endereco: ocorrencia.endereco,
           dataOcorrencia: formatDateForDisplay(ocorrencia.data_ocorrencia),
@@ -218,16 +217,7 @@ export default function OcorrenciasPage() {
     }
   };
 
-  // Função para obter cor da prioridade
-  const getPrioridadeColor = (prioridade: string) => {
-    switch (prioridade) {
-      case 'Baixa': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Média': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Alta': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'Crítica': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+
 
   // Filtrar ocorrências
   const filteredOcorrencias = ocorrencias.filter(ocorrencia => {
@@ -272,7 +262,7 @@ export default function OcorrenciasPage() {
     setNewOcorrencia({
       titulo: '',
       tipo: TIPOS_OCORRENCIA[0],
-      prioridade: 'Média',
+
       status: 'Aberta',
       endereco: '',
       data_ocorrencia: '',
@@ -338,7 +328,7 @@ export default function OcorrenciasPage() {
       const ocorrenciaData: Omit<Ocorrencia, 'id' | 'created_at' | 'updated_at' | 'tempo_total_minutos'> = {
         titulo: newOcorrencia.titulo!.trim(),
         tipo: newOcorrencia.tipo!,
-        prioridade: newOcorrencia.prioridade!,
+
         status: 'Aberta',
         endereco: newOcorrencia.endereco!.trim(),
         data_ocorrencia: newOcorrencia.data_ocorrencia!,
@@ -367,7 +357,7 @@ export default function OcorrenciasPage() {
         id: novaOcorrencia.id || '',
         titulo: novaOcorrencia.titulo,
         tipo: novaOcorrencia.tipo,
-        prioridade: novaOcorrencia.prioridade,
+
         status: novaOcorrencia.status,
         endereco: novaOcorrencia.endereco,
         dataOcorrencia: formatDateForDisplay(novaOcorrencia.data_ocorrencia),
@@ -517,7 +507,7 @@ export default function OcorrenciasPage() {
 
   const exportToExcel = () => {
     // Simulação de exportação para Excel (CSV)
-    const headers = ['ID', 'Título', 'Tipo', 'Status', 'Prioridade', 'Data', 'Hora', 'Responsável', 'Equipe'];
+    const headers = ['ID', 'Título', 'Tipo', 'Status', 'Data', 'Hora', 'Responsável', 'Equipe'];
     const csvContent = [
       headers.join(','),
       ...filteredOcorrencias.map(ocorrencia => [
@@ -525,7 +515,7 @@ export default function OcorrenciasPage() {
         `"${ocorrencia.titulo}"`,
         `"${ocorrencia.tipo}"`,
         ocorrencia.status,
-        ocorrencia.prioridade,
+  
         ocorrencia.dataOcorrencia,
         ocorrencia.horaOcorrencia,
         `"${ocorrencia.responsavel}"`,
@@ -678,9 +668,7 @@ export default function OcorrenciasPage() {
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(ocorrencia.status)}`}>
                         {ocorrencia.status}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPrioridadeColor(ocorrencia.prioridade)}`}>
-                        {ocorrencia.prioridade}
-                      </span>
+
                     </div>
                   </div>
 
@@ -788,9 +776,7 @@ export default function OcorrenciasPage() {
                           <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(selectedOcorrencia.status)} bg-white/20 backdrop-blur-sm border-white/30`}>
                             {selectedOcorrencia.status}
                           </span>
-                          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getPrioridadeColor(selectedOcorrencia.prioridade)} bg-white/20 backdrop-blur-sm border-white/30`}>
-                            {selectedOcorrencia.prioridade}
-                          </span>
+
                         </div>
                       </div>
                     </div>
@@ -897,12 +883,7 @@ export default function OcorrenciasPage() {
                             {selectedOcorrencia.status}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-coal-black/60">Prioridade</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPrioridadeColor(selectedOcorrencia.prioridade)}`}>
-                            {selectedOcorrencia.prioridade}
-                          </span>
-                        </div>
+
                       </div>
                     </div>
 
@@ -1051,20 +1032,7 @@ export default function OcorrenciasPage() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Prioridade *</label>
-                      <select
-                        value={newOcorrencia.prioridade || ''}
-                        onChange={(e) => updateNewOcorrenciaField('prioridade', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200"
-                      >
-                        <option value="">Selecione a prioridade</option>
-                        <option value="Baixa">Baixa</option>
-                        <option value="Média">Média</option>
-                        <option value="Alta">Alta</option>
-                        <option value="Crítica">Crítica</option>
-                      </select>
-                    </div>
+
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-coal-black mb-2">Endereço/Local *</label>
                       <input

@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS public.ocorrencias (
         'Remoção de Animais e Dispersão de Avifauna'
     )),
     status TEXT NOT NULL DEFAULT 'Aberta' CHECK (status IN ('Aberta', 'Em Andamento', 'Resolvida', 'Cancelada')),
-    prioridade TEXT NOT NULL DEFAULT 'Média' CHECK (prioridade IN ('Baixa', 'Média', 'Alta', 'Crítica')),
     
     -- Data e localização
     data_ocorrencia DATE NOT NULL,

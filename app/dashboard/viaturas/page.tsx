@@ -227,12 +227,12 @@ export default function ViaturasPage() {
       <div className="flex flex-col h-full">
         <Header userName={userData.userName} userEmail={userData.userEmail} />
         
-        <div className="flex-1 bg-fog-gray/30 overflow-auto min-h-screen">
+        <div className="flex-1 bg-fog-gray/30 overflow-auto min-h-screen transition-colors duration-300">
           <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
             {/* Cabeçalho */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-coal-black mb-2">Gestão das Viaturas</h1>
-              <p className="text-coal-black/70">Controle completo da frota da corporação</p>
+              <h1 className="text-3xl font-bold text-coal-black mb-2 transition-colors duration-300">Gestão das Viaturas</h1>
+              <p className="text-coal-black/70 transition-colors duration-300">Controle completo da frota da corporação</p>
             </div>
             
             {/* Botão Adicionar */}
@@ -361,13 +361,13 @@ export default function ViaturasPage() {
             {/* Modal de Status */}
             {showStatusModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-colors duration-300">
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-6">
-                      <h2 className="text-2xl font-bold text-coal-black capitalize">Viaturas - {selectedStatus}</h2>
+                      <h2 className="text-2xl font-bold text-coal-black capitalize transition-colors duration-300">Viaturas - {selectedStatus}</h2>
                       <button
                         onClick={() => setShowStatusModal(false)}
-                        className="text-coal-black/60 hover:text-coal-black transition-colors"
+                        className="text-coal-black/60 hover:text-coal-black:text-dark-text transition-colors"
                       >
                         <X className="w-6 h-6" />
                       </button>
@@ -375,7 +375,7 @@ export default function ViaturasPage() {
                     
                     <div className="space-y-4">
                       {viaturas.filter(v => v.status === selectedStatus).map((viatura) => (
-                        <div key={viatura.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div key={viatura.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 transition-colors duration-300">
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-4">
                               <div className="flex items-center gap-2">
@@ -399,14 +399,14 @@ export default function ViaturasPage() {
                                   setSelectedViaturaForChecklist(viatura)
                                   setShowChecklistModal(true)
                                 }}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-2 text-blue-600 hover:bg-blue-50:bg-blue-900/20 rounded-lg transition-colors"
                                 title="Ver último checklist"
                               >
                                 <Eye className="w-5 h-5" />
                               </button>
                               <button
                                 onClick={() => openModal(viatura)}
-                                className="p-2 text-coal-black/60 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-2 text-coal-black/60 hover:bg-gray-100:bg-dark-bg/50 rounded-lg transition-colors"
                                 title="Ver detalhes"
                               >
                                 <FileText className="w-5 h-5" />
@@ -427,13 +427,13 @@ export default function ViaturasPage() {
             {/* Modal de Checklist */}
             {showChecklistModal && selectedViaturaForChecklist && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto transition-colors duration-300">
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-6">
                       <h2 className="text-2xl font-bold text-coal-black">Último Checklist - {selectedViaturaForChecklist.codigo}</h2>
                       <button
                         onClick={() => setShowChecklistModal(false)}
-                        className="text-coal-black/60 hover:text-coal-black transition-colors"
+                        className="text-coal-black/60 hover:text-coal-black:text-dark-text transition-colors"
                       >
                         <X className="w-6 h-6" />
                       </button>
@@ -441,7 +441,7 @@ export default function ViaturasPage() {
                     
                     <div className="space-y-6">
                       {/* Informações do Checklist */}
-                      <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="bg-gray-50 rounded-lg p-4 transition-colors duration-300">
                         <h3 className="text-lg font-semibold text-coal-black mb-3">Informações do Checklist</h3>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
@@ -459,35 +459,35 @@ export default function ViaturasPage() {
                       <div>
                         <h3 className="text-lg font-semibold text-coal-black mb-4">Itens Verificados</h3>
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200 transition-colors duration-300">
                             <span className="text-coal-black">Nível de óleo do motor</span>
                             <div className="flex items-center gap-2">
                               <CheckCircle className="w-5 h-5 text-green-600" />
                               <span className="text-green-600 font-medium">Conforme</span>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200 transition-colors duration-300">
                             <span className="text-coal-black">Pressão dos pneus</span>
                             <div className="flex items-center gap-2">
                               <CheckCircle className="w-5 h-5 text-green-600" />
                               <span className="text-green-600 font-medium">Conforme</span>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                          <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 transition-colors duration-300">
                             <span className="text-coal-black">Funcionamento das luzes</span>
                             <div className="flex items-center gap-2">
                               <XCircle className="w-5 h-5 text-red-600" />
                               <span className="text-red-600 font-medium">Não Conforme</span>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                          <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200 transition-colors duration-300">
                             <span className="text-coal-black">Nível do fluido de freio</span>
                             <div className="flex items-center gap-2">
                               <AlertCircle className="w-5 h-5 text-yellow-600" />
                               <span className="text-yellow-600 font-medium">Atenção</span>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200 transition-colors duration-300">
                             <span className="text-coal-black">Equipamentos de segurança</span>
                             <div className="flex items-center gap-2">
                               <CheckCircle className="w-5 h-5 text-green-600" />
@@ -500,13 +500,13 @@ export default function ViaturasPage() {
                       {/* Observações */}
                       <div>
                         <h3 className="text-lg font-semibold text-coal-black mb-3">Observações</h3>
-                        <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="bg-gray-50 rounded-lg p-4 transition-colors duration-300">
                           <p className="text-coal-black">Luz de freio traseira direita não está funcionando. Necessário substituição da lâmpada. Fluido de freio próximo ao nível mínimo, recomenda-se completar.</p>
                         </div>
                       </div>
 
                       {/* Resumo */}
-                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200 transition-colors duration-300">
                         <h3 className="text-lg font-semibold text-blue-800 mb-2">Resumo do Checklist</h3>
                         <div className="grid grid-cols-3 gap-4">
                           <div className="text-center">
@@ -535,13 +535,13 @@ export default function ViaturasPage() {
         {/* Modal de Detalhes */}
         {isModalOpen && selectedViatura && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border transition-colors duration-300">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
-                  <h2 className="text-2xl font-bold text-coal-black">Detalhes da Viatura</h2>
+                  <h2 className="text-2xl font-bold text-coal-black transition-colors duration-300">Detalhes da Viatura</h2>
                   <button
                     onClick={closeModal}
-                    className="text-coal-black/60 hover:text-coal-black transition-colors"
+                    className="text-coal-black/60 hover:text-coal-black:text-dark-text transition-colors duration-300"
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -551,66 +551,66 @@ export default function ViaturasPage() {
                   {/* Informações Básicas */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm text-coal-black/60">Código</label>
-                      <p className="font-medium text-coal-black">{selectedViatura.codigo}</p>
+                      <label className="text-sm text-coal-black/60 transition-colors duration-300">Código</label>
+                      <p className="font-medium text-coal-black transition-colors duration-300">{selectedViatura.codigo}</p>
                     </div>
                     <div>
-                      <label className="text-sm text-coal-black/60">Tipo</label>
-                      <p className="font-medium text-coal-black">{selectedViatura.tipo}</p>
+                      <label className="text-sm text-coal-black/60 transition-colors duration-300">Tipo</label>
+                      <p className="font-medium text-coal-black transition-colors duration-300">{selectedViatura.tipo}</p>
                     </div>
                     <div>
-                      <label className="text-sm text-coal-black/60">Modelo</label>
-                      <p className="font-medium text-coal-black">{selectedViatura.modelo}</p>
+                      <label className="text-sm text-coal-black/60 transition-colors duration-300">Modelo</label>
+                      <p className="font-medium text-coal-black transition-colors duration-300">{selectedViatura.modelo}</p>
                     </div>
                     <div>
-                      <label className="text-sm text-coal-black/60">Ano</label>
-                      <p className="font-medium text-coal-black">{selectedViatura.ano}</p>
+                      <label className="text-sm text-coal-black/60 transition-colors duration-300">Ano</label>
+                      <p className="font-medium text-coal-black transition-colors duration-300">{selectedViatura.ano}</p>
                     </div>
                     <div>
-                      <label className="text-sm text-coal-black/60">Status</label>
+                      <label className="text-sm text-coal-black/60 transition-colors duration-300">Status</label>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(selectedViatura.status)}`}>
                         {selectedViatura.status}
                       </span>
                     </div>
                     <div>
-                      <label className="text-sm text-coal-black/60">Responsável</label>
-                      <p className="font-medium text-coal-black">{selectedViatura.responsavel}</p>
+                      <label className="text-sm text-coal-black/60 transition-colors duration-300">Responsável</label>
+                      <p className="font-medium text-coal-black transition-colors duration-300">{selectedViatura.responsavel}</p>
                     </div>
                   </div>
                   
                   {/* Informações Operacionais */}
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-semibold text-coal-black mb-4">Informações Operacionais</h3>
+                  <div className="border-t pt-6 transition-colors duration-300">
+                    <h3 className="text-lg font-semibold text-coal-black mb-4 transition-colors duration-300">Informações Operacionais</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm text-coal-black/60">Quilometragem</label>
-                        <p className="font-medium text-coal-black">{selectedViatura.quilometragem.toLocaleString()} km</p>
+                        <label className="text-sm text-coal-black/60 transition-colors duration-300">Quilometragem</label>
+                        <p className="font-medium text-coal-black transition-colors duration-300">{selectedViatura.quilometragem.toLocaleString()} km</p>
                       </div>
                       <div>
-                        <label className="text-sm text-coal-black/60">Nível de Combustível</label>
+                        <label className="text-sm text-coal-black/60 transition-colors duration-300">Nível de Combustível</label>
                         <div className="flex items-center gap-2">
-                          <Fuel className="w-4 h-4 text-coal-black/60" />
+                          <Fuel className="w-4 h-4 text-coal-black/60 transition-colors duration-300" />
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getCombustivelColor(selectedViatura.combustivel)}`}>
                             {selectedViatura.combustivel}%
                           </span>
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm text-coal-black/60">Última Manutenção</label>
-                        <p className="font-medium text-coal-black">{selectedViatura.ultimaManutencao}</p>
+                        <label className="text-sm text-coal-black/60 transition-colors duration-300">Última Manutenção</label>
+                        <p className="font-medium text-coal-black transition-colors duration-300">{selectedViatura.ultimaManutencao}</p>
                       </div>
                       <div>
-                        <label className="text-sm text-coal-black/60">Próxima Manutenção</label>
-                        <p className="font-medium text-coal-black">{selectedViatura.proximaManutencao}</p>
+                        <label className="text-sm text-coal-black/60 transition-colors duration-300">Próxima Manutenção</label>
+                        <p className="font-medium text-coal-black transition-colors duration-300">{selectedViatura.proximaManutencao}</p>
                       </div>
                     </div>
                   </div>
                   
                   {/* Observações */}
                   {selectedViatura.observacoes && (
-                    <div className="border-t pt-6">
-                      <h3 className="text-lg font-semibold text-coal-black mb-4">Observações</h3>
-                      <p className="text-coal-black">{selectedViatura.observacoes}</p>
+                    <div className="border-t pt-6 transition-colors duration-300">
+                      <h3 className="text-lg font-semibold text-coal-black mb-4 transition-colors duration-300">Observações</h3>
+                      <p className="text-coal-black transition-colors duration-300">{selectedViatura.observacoes}</p>
                     </div>
                   )}
                 </div>
@@ -622,7 +622,7 @@ export default function ViaturasPage() {
         {/* Modal de Adicionar Nova Viatura */}
         {isAddModalOpen && (
           <div className="fixed inset-0 bg-coal-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-pure-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-fog-gray/20 flex flex-col">
+            <div className="bg-pure-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-fog-gray/20 flex flex-col transition-colors duration-300">
               <div className="bg-gradient-to-r from-radiant-orange to-radiant-orange/80 p-6 relative overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pure-white/10 to-transparent transform -skew-x-12"></div>
                 <div className="relative w-full">
@@ -638,30 +638,30 @@ export default function ViaturasPage() {
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-pure-white to-fog-gray/5 scrollbar-thin scrollbar-thumb-radiant-orange/30 scrollbar-track-fog-gray/10">
+              <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-pure-white to-fog-gray/5 scrollbar-thin scrollbar-thumb-radiant-orange/30 scrollbar-track-fog-gray/10 transition-colors duration-300">
                 
-                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-6 mb-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-6 mb-6 shadow-sm transition-colors duration-300">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2 transition-colors duration-300">
                     <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
                     Dados Básicos
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Código *</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Código *</label>
                       <input
                         type="text"
                         value={newViatura.codigo || ''}
                         onChange={(e) => updateNewViaturaField('codigo', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                         placeholder="Ex: ABT-04"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Tipo *</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Tipo *</label>
                       <select
                         value={newViatura.tipo || ''}
                         onChange={(e) => updateNewViaturaField('tipo', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                       >
                       <option value="">Selecione o tipo</option>
                       <option value="cci">Carro Contra Incêndio-CCI</option>
@@ -671,32 +671,32 @@ export default function ViaturasPage() {
                     </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Modelo *</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Modelo *</label>
                       <input
                         type="text"
                         value={newViatura.modelo || ''}
                         onChange={(e) => updateNewViaturaField('modelo', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                         placeholder="Ex: Mercedes-Benz Atego"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">ATIV *</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">ATIV *</label>
                       <input
                         type="date"
                         value={newViatura.ano || new Date().getFullYear()}
                         onChange={(e) => updateNewViaturaField('ano', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                         placeholder="dd/mm/aaaa"
                         lang="pt-BR"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Status</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Status</label>
                       <select 
                       value={newViatura.status} 
                       onChange={(e) => updateNewViaturaField('status', e.target.value)}
-                      className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                      className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                     >
                       <option value="">Selecione o status</option>
                       <option value="em linha">Em Linha</option>
@@ -709,52 +709,52 @@ export default function ViaturasPage() {
                   </div>
                 </div>
                   
-                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-6 mb-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-6 mb-6 shadow-sm transition-colors duration-300">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2 transition-colors duration-300">
                     <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
                     Informações Operacionais
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Quilometragem</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Quilometragem</label>
                       <input
                         type="number"
                         value={newViatura.quilometragem || 0}
                         onChange={(e) => updateNewViaturaField('quilometragem', parseInt(e.target.value))}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                         placeholder="Ex: 50000"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Combustível (%)</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Combustível (%)</label>
                       <input
                         type="number"
                         min="0"
                         max="100"
                         value={newViatura.combustivel || 100}
                         onChange={(e) => updateNewViaturaField('combustivel', parseInt(e.target.value))}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                         placeholder="Ex: 85"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Última Manutenção</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Última Manutenção</label>
                       <input
                         type="date"
                         value={newViatura.ultimaManutencao || ''}
                         onChange={(e) => updateNewViaturaField('ultimaManutencao', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                         placeholder="dd/mm/aaaa"
                         lang="pt-BR"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Próxima Manutenção Preventiva</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Próxima Manutenção Preventiva</label>
                       <input
                         type="date"
                         value={newViatura.proximaManutencao || ''}
                         onChange={(e) => updateNewViaturaField('proximaManutencao', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 text-coal-black"
                         placeholder="dd/mm/aaaa"
                         lang="pt-BR"
                       />
@@ -762,18 +762,18 @@ export default function ViaturasPage() {
                   </div>
                 </div>
                 
-                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-6 mb-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2">
+                <div className="bg-pure-white rounded-xl border border-fog-gray/20 p-6 mb-6 shadow-sm transition-colors duration-300">
+                  <h3 className="text-lg font-semibold text-coal-black mb-4 flex items-center gap-2 transition-colors duration-300">
                     <div className="w-2 h-2 bg-radiant-orange rounded-full"></div>
                     Observações
                   </h3>
                   <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-coal-black mb-2">Observações</label>
+                      <label className="block text-sm font-semibold text-coal-black mb-2 transition-colors duration-300">Observações</label>
                       <textarea
                         value={newViatura.observacoes || ''}
                         onChange={(e) => updateNewViaturaField('observacoes', e.target.value)}
-                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 resize-none"
+                        className="w-full px-4 py-3 border border-fog-gray/30 rounded-xl focus:ring-2 focus:ring-radiant-orange focus:border-radiant-orange transition-all duration-200 bg-pure-white hover:border-radiant-orange/50 resize-none text-coal-black"
                         placeholder="Observações adicionais sobre a viatura"
                         rows={3}
                       />
@@ -783,10 +783,10 @@ export default function ViaturasPage() {
                   
 
               </div>
-              <div className="border-t border-fog-gray/20 bg-pure-white p-6 flex justify-end gap-4 rounded-b-2xl">
+              <div className="border-t border-fog-gray/20 bg-pure-white p-6 flex justify-end gap-4 rounded-b-2xl transition-colors duration-300">
                 <button
                   onClick={closeAddModal}
-                  className="px-8 py-3 border-2 border-fog-gray/30 text-coal-black rounded-xl hover:bg-fog-gray/10 hover:border-fog-gray/50 transition-all duration-200 font-medium"
+                  className="px-8 py-3 border-2 border-fog-gray/30 text-coal-black rounded-xl hover:bg-fog-gray/10:bg-dark-bg hover:border-fog-gray/50:border-dark-border transition-all duration-200 font-medium"
                 >
                   Cancelar
                 </button>

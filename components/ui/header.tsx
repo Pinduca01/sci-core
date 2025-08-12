@@ -34,7 +34,7 @@ export default function Header({ userName, userEmail }: HeaderProps) {
   };
 
   return (
-    <header className="bg-pure-white border-b border-fog-gray/20 shadow-sm sticky top-0 z-50">
+    <header className="bg-pure-white border-b border-fog-gray/20 shadow-sm sticky top-0 z-50 transition-colors duration-300">
       <div className="w-full px-2 sm:px-3 lg:px-4">
         <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Espaço vazio à esquerda */}
@@ -59,7 +59,7 @@ export default function Header({ userName, userEmail }: HeaderProps) {
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center p-1.5 sm:p-2 text-coal-black/70 hover:text-radiant-orange hover:bg-radiant-orange/10 rounded-lg transition-colors duration-200 border border-transparent hover:border-radiant-orange/20"
+                className="flex items-center p-1.5 sm:p-2 text-coal-black/70 hover:text-radiant-orange hover:bg-radiant-orange/10:bg-radiant-orange/20 rounded-lg transition-colors duration-200 border border-transparent hover:border-radiant-orange/20:border-radiant-orange/30"
                 aria-label="Menu do usuário"
               >
                 <ChevronDownIcon className="w-4 h-4 text-coal-black" />
@@ -78,7 +78,7 @@ export default function Header({ userName, userEmail }: HeaderProps) {
                   <button
                     onClick={handleLogout}
                     disabled={isLoggingOut}
-                    className="flex items-center w-full px-4 py-2 text-sm font-poppins text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center w-full px-4 py-2 text-sm font-poppins text-red-600 hover:bg-red-50:bg-red-900/20 hover:text-red-700:text-red-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ArrowRightOnRectangleIcon className="w-4 h-4 mr-3 text-red-500" />
                     {isLoggingOut ? 'Saindo...' : 'Sair'}

@@ -89,7 +89,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-full px-4 py-4 hidden md:flex md:flex-col bg-fog-gray w-[300px] flex-shrink-0",
+        "h-full px-4 py-4 hidden md:flex md:flex-col bg-fog-gray w-[300px] flex-shrink-0 border-r border-fog-gray/20 transition-colors duration-300",
         className
       )}
       animate={{
@@ -114,13 +114,13 @@ export const MobileSidebar = ({
     <>
       <div
         className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-fog-gray w-full"
+          "h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-fog-gray w-full border-b border-fog-gray/20 transition-colors duration-300"
         )}
         {...props}
       >
         <div className="flex justify-end z-20 w-full">
           <Menu
-            className="text-coal-black cursor-pointer"
+            className="text-coal-black cursor-pointer transition-colors duration-300"
             onClick={() => setOpen(!open)}
           />
         </div>
@@ -135,12 +135,12 @@ export const MobileSidebar = ({
                 ease: "easeInOut",
               }}
               className={cn(
-                "fixed h-full w-full inset-0 bg-fog-gray p-10 z-[100] flex flex-col justify-between",
+                "fixed h-full w-full inset-0 bg-fog-gray p-10 z-[100] flex flex-col justify-between transition-colors duration-300",
                 className
               )}
             >
               <div
-                className="absolute right-10 top-10 z-50 text-coal-black cursor-pointer"
+                className="absolute right-10 top-10 z-50 text-coal-black cursor-pointer transition-colors duration-300"
                 onClick={() => setOpen(!open)}
               >
                 <X />
@@ -176,7 +176,7 @@ export const SidebarLink = ({
     <Link
       href={link.href}
       className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2 text-coal-black hover:text-radiant-orange transition-colors",
+        "flex items-center justify-start gap-2 group/sidebar py-2 text-coal-black hover:text-radiant-orange:text-radiant-orange transition-colors duration-300",
         className
       )}
       onClick={handleClick}
