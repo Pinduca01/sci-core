@@ -88,7 +88,7 @@ export function SidebarDemo({ children }: SidebarDemoProps) {
   const [open, setOpen] = useState(false);
   
   return (
-    <div className="flex flex-col md:flex-row bg-white w-full flex-1 overflow-hidden h-screen">
+    <div className="flex flex-col md:flex-row bg-white w-full flex-1 min-h-screen">
       <Sidebar open={open} setOpen={setOpen}>
         <SidebarBody className="justify-between gap-10">
           <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
@@ -103,7 +103,7 @@ export function SidebarDemo({ children }: SidebarDemoProps) {
           </div>
         </SidebarBody>
       </Sidebar>
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
         {children}
       </div>
     </div>

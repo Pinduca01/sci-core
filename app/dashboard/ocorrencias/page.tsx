@@ -3,7 +3,7 @@
 import Header from '@/components/ui/header';
 import { SidebarDemo } from '@/components/ui/sidebar-demo';
 import { useState, useEffect } from 'react';
-import { Search, Filter, FileText, AlertTriangle, Car, Flame, Users, Edit, X, Phone, Mail, MapPin, Calendar, DollarSign, Plus, Upload, Trash2, UserPlus, Eye, Clock, CheckCircle, XCircle, AlertCircle, Brain, Send, Loader2, Download } from 'lucide-react';
+import { Search, Filter, FileText, AlertTriangle, Car, Flame, Users, Edit, X, Phone, Mail, MapPin, Calendar, DollarSign, Plus, Upload, Trash2, UserPlus, Eye, Clock, CheckCircle, XCircle, AlertCircle, Brain, Send, Loader2, Download, BarChart3, TrendingUp, Activity } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ocorrenciaService, Ocorrencia, TIPOS_OCORRENCIA, EQUIPES, STATUS_OCORRENCIA, PRIORIDADES } from '@/lib/services/ocorrenciaService';
 

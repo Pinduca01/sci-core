@@ -24,12 +24,12 @@ export default function LoginPage() {
           >
         <div className="flex items-start justify-center px-8 h-full">
            <div className="flex items-center gap-8">
-             <h1 className="text-6xl lg:text-7xl font-bold text-gray-800 font-montserrat">
+             <h1 className="text-3xl lg:text-4xl font-bold text-gray-800 font-montserrat">
                  SCI-Core
                </h1>
-             <div className="text-6xl lg:text-7xl font-bold text-orange-500 font-poppins">
+             <div className="text-3xl lg:text-4xl font-bold text-orange-500 font-poppins">
                <RotatingText
-                 texts={["Controle", "Gestão", "Centralização", "Praticidade"]}
+                 texts={["Gestão", "Ação", "Suporte"]}
                  rotationInterval={3000}
                  staggerDuration={0.1}
                  className="block"
