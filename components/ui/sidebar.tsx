@@ -5,6 +5,7 @@ import Link, { LinkProps } from "next/link";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { useScreenSize } from "@/components/hooks/use-screen-size";
 
 interface Links {
   label: string;
@@ -164,10 +165,11 @@ export const SidebarLink = ({
   props?: LinkProps;
 }) => {
   const { open, animate, setOpen } = useSidebar();
+  const { lessThan } = useScreenSize();
   
   const handleClick = () => {
     // Minimiza a sidebar em dispositivos móveis após o clique
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    if (lessThan('md')) {
       setOpen(false);
     }
   };

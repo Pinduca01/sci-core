@@ -19,8 +19,8 @@ const breakpoints = {
 
 export function useScreenSize(): ScreenSize {
   const [screenSize, setScreenSize] = useState<{ width: number; height: number }>({
-    width: typeof window !== 'undefined' ? window.innerWidth : 1024,
-    height: typeof window !== 'undefined' ? window.innerHeight : 768,
+    width: 1024, // Valor padrão consistente para SSR
+    height: 768, // Valor padrão consistente para SSR
   })
 
   useEffect(() => {
@@ -31,8 +31,10 @@ export function useScreenSize(): ScreenSize {
       })
     }
 
+    // Definir o tamanho inicial apenas no cliente
+    handleResize()
+    
     window.addEventListener('resize', handleResize)
-    handleResize() // Call once to set initial size
 
     return () => window.removeEventListener('resize', handleResize)
   }, [])
