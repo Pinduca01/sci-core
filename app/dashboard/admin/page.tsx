@@ -259,10 +259,7 @@ export default function DashboardPage() {
     <SidebarDemo>
       <div className="flex flex-col h-full">
         {/* Header com props do usuário */}
-        <Header 
-  userName={user?.name || user?.displayName || 'Usuário'}
-  userEmail={user?.email || 'usuario@exemplo.com'}
-/>
+      <Header />
         
         <div className="flex-1 bg-gradient-to-br from-white via-orange-50/30 to-gray-50 p-8 min-h-screen">
           {/* Título */}
