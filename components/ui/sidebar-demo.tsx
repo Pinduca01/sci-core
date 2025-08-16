@@ -50,7 +50,7 @@ export function SidebarDemo({ children }: SidebarDemoProps) {
     },
     {
       label: "Exercícios",
-      href: "#",
+      href: "/dashboard/exercicios#",        // ← LINK ATIVO
       icon: (
         <Activity className="text-coal-black h-5 w-5 flex-shrink-0" />
       ),

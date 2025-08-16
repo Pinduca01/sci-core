@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Poppins, Montserrat } from 'next/font/google'
 import './globals.css'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 const inter = Inter({ 
   subsets: ['latin'], 
@@ -23,8 +24,8 @@ const montserrat = Montserrat({
 })
 
 export const metadata: Metadata = {
-  title: 'SCI Core - Login',
-  description: 'Sistema de autenticação SCI Core',
+  title: 'SCI Core',
+  description: 'Sistema de gestão SCI Core',
 }
 
 export default function RootLayout({
@@ -35,7 +36,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${inter.variable} ${poppins.variable} ${montserrat.variable} font-inter`}>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )

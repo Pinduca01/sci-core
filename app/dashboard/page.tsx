@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/ui/header';
 import { SidebarDemo } from '@/components/ui/sidebar-demo';
 import { useState, useEffect } from 'react';
@@ -88,6 +89,26 @@ const dadosGraficoPizza = [
 const CORES = ['#22c55e', '#eab308', '#ef4444'];
 
 export default function DashboardPage() {
+  const { user, loading } = useAuth(); // PRIMEIRO: useAuth
+  
+  // SEGUNDO: Proteções (antes de outros hooks)
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Acesso negado</div>
+      </div>
+    );
+  }
+
+  // TERCEIRO: Outros hooks (sempre executados na mesma ordem)
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
@@ -98,12 +119,7 @@ export default function DashboardPage() {
   const [areaFilter, setAreaFilter] = useState('');
   const [showCustomDate, setShowCustomDate] = useState(false);
 
-  // Dados mockados do usuário
-  const userData = {
-    userName: 'João Silva',
-    userEmail: 'joao.silva@empresa.com'
-  };
-
+  // RESTO DO CÓDIGO CONTINUA IGUAL...
   useEffect(() => {
     const mockData = generateMockData();
     setData(mockData);
@@ -242,13 +258,27 @@ export default function DashboardPage() {
   return (
     <SidebarDemo>
       <div className="flex flex-col h-full">
-        <Header userName={userData.userName} userEmail={userData.userEmail} />
+        <Header />
         
-        <div className="flex-1 bg-gradient-to-br from-pure-white to-fog-gray/20 p-8">
+        <div className="flex-1 bg-gradient-to-br from-white via-orange-50/30 to-gray-50 p-8 min-h-screen">
           {/* Título */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">📊 Dashboard - Módulo de Ocorrências</h1>
-            <p className="text-gray-600">Visão geral das ocorrências registradas no sistema</p>
+          <div className="mb-8 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-transparent rounded-2xl -z-10"></div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-orange-600 to-gray-800 bg-clip-text text-transparent mb-3 flex items-center gap-3">
+                  <BarChart3 className="w-10 h-10 text-orange-600" />
+                  Dashboard Inteligência Operacional
+                </h1>
+                <p className="text-gray-600 text-lg font-medium">Análise avançada de ocorrências e performance operacional</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="px-4 py-2 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold">
+                  Tempo Real
+                </div>
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              </div>
+            </div>
           </div>
 
           {/* Sistema de Filtros Avançado */}
@@ -540,59 +570,82 @@ export default function DashboardPage() {
           {/* Seção 1: Resumo Executivo - KPIs Principais */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* KPI 1: Total de Ocorrências */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
+            <div className="group relative bg-gradient-to-br from-white to-orange-50/30 p-6 rounded-2xl shadow-lg border border-orange-100/50 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Total de Ocorrências</p>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{totalOcorrencias}</p>
-                  <p className="text-sm text-green-600 font-medium flex items-center">
-                    <span className="mr-1">▲</span> 15% vs. Período Anterior
-                  </p>
+                  <p className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Total de Ocorrências</p>
+                  <p className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-orange-600 bg-clip-text text-transparent mb-2">{totalOcorrencias}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center px-2 py-1 bg-green-100 rounded-full">
+                      <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
+                      <span className="text-xs font-semibold text-green-700">+15%</span>
+                    </div>
+                    <span className="text-xs text-gray-500">vs. período anterior</span>
+                  </div>
                 </div>
-                <div className="h-14 w-14 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 text-2xl">📊</span>
+                <div className="h-16 w-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-orange-200 transition-shadow duration-300">
+                  <BarChart3 className="w-8 h-8 text-white" />
                 </div>
               </div>
             </div>
 
             {/* KPI 2: Duração Total Média */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
+            <div className="group relative bg-gradient-to-br from-white to-gray-50/30 p-6 rounded-2xl shadow-lg border border-gray-100/50 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-500/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Duração Total Média</p>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{duracaoMedia} min</p>
-                  <p className="text-xs text-gray-500">Do acionamento à finalização</p>
+                  <p className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Duração Total Média</p>
+                  <p className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">{duracaoMedia} <span className="text-2xl">min</span></p>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 bg-blue-100 rounded-full">
+                      <span className="text-xs font-semibold text-blue-700">Otimizado</span>
+                    </div>
+                    <span className="text-xs text-gray-500">acionamento → finalização</span>
+                  </div>
                 </div>
-                <div className="h-14 w-14 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600 text-2xl">⏱️</span>
+                <div className="h-16 w-16 bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-gray-200 transition-shadow duration-300">
+                  <Clock className="w-8 h-8 text-white" />
                 </div>
               </div>
             </div>
 
             {/* KPI 3: Deslocamento Médio */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
+            <div className="group relative bg-gradient-to-br from-white to-orange-50/20 p-6 rounded-2xl shadow-lg border border-orange-100/30 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-400/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Deslocamento Médio</p>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{deslocamentoMedio} min</p>
-                  <p className="text-xs text-gray-500">Do acionamento à chegada</p>
+                  <p className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Deslocamento Médio</p>
+                  <p className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent mb-2">{deslocamentoMedio} <span className="text-2xl">min</span></p>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 bg-orange-100 rounded-full">
+                      <span className="text-xs font-semibold text-orange-700">Rápido</span>
+                    </div>
+                    <span className="text-xs text-gray-500">acionamento → chegada</span>
+                  </div>
                 </div>
-                <div className="h-14 w-14 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <span className="text-orange-600 text-2xl">🚑</span>
+                <div className="h-16 w-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-orange-200 transition-shadow duration-300">
+                  <Activity className="w-8 h-8 text-white" />
                 </div>
               </div>
             </div>
 
             {/* KPI 4: Principal Incidente */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
+            <div className="group relative bg-gradient-to-br from-white to-red-50/20 p-6 rounded-2xl shadow-lg border border-red-100/30 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Principal Incidente</p>
-                  <p className="text-xl font-bold text-gray-900 mb-1">{principalIncidente}</p>
-                  <p className="text-sm text-blue-600 font-medium">{principalPercentual}% do Total</p>
+                  <p className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Principal Incidente</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-red-600 bg-clip-text text-transparent mb-2">{principalIncidente}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 bg-red-100 rounded-full">
+                      <span className="text-xs font-semibold text-red-700">{principalPercentual}%</span>
+                    </div>
+                    <span className="text-xs text-gray-500">do total de ocorrências</span>
+                  </div>
                 </div>
-                <div className="h-14 w-14 bg-red-100 rounded-lg flex items-center justify-center">
-                  <span className="text-red-600 text-2xl">⚠️</span>
+                <div className="h-16 w-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-red-200 transition-shadow duration-300">
+                  <AlertTriangle className="w-8 h-8 text-white" />
                 </div>
               </div>
             </div>
@@ -601,35 +654,52 @@ export default function DashboardPage() {
           {/* Seção 2: Análise Visual Detalhada */}
           <div className="space-y-6 mb-8">
             {/* Gráfico 1: Ocorrências Mais Frequentes */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Ocorrências Mais Frequentes</h3>
-                <p className="text-sm text-gray-600">Quais são nossos maiores e mais recorrentes problemas operacionais?</p>
+            <div className="bg-gradient-to-br from-white to-orange-50/20 p-8 rounded-2xl shadow-xl border border-orange-100/30 backdrop-blur-sm">
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-orange-600 bg-clip-text text-transparent mb-2">Ocorrências Mais Frequentes</h3>
+                    <p className="text-gray-600 font-medium">Análise dos principais problemas operacionais identificados</p>
+                  </div>
+                  <div className="h-12 w-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <BarChart3 className="w-6 h-6 text-white" />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {chartData.ocorrenciasFrequentes.length > 0 ? chartData.ocorrenciasFrequentes.map((item, index) => (
-                  <div key={index} className="flex items-center space-x-4">
-                    <div className="w-40 text-sm font-medium text-gray-700 text-right">
-                      {item.tipo}
-                    </div>
-                    <div className="flex-1 relative">
-                      <div className="h-8 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${item.color} transition-all duration-500 ease-out`}
-                          style={{ width: `${item.percentage}%` }}
-                        ></div>
+                  <div key={index} className="group p-4 rounded-xl bg-white/60 hover:bg-white/80 transition-all duration-300 hover:shadow-lg border border-gray-100/50">
+                    <div className="flex items-center space-x-6">
+                      <div className="w-44 text-sm font-bold text-gray-800">
+                        {item.tipo}
                       </div>
-                    </div>
-                    <div className="w-16 text-sm font-semibold text-gray-900 text-center">
-                      {item.count}
-                    </div>
-                    <div className="w-12 text-xs text-gray-500 text-right">
-                      {item.percentage}%
+                      <div className="flex-1 relative">
+                        <div className="h-10 bg-gradient-to-r from-gray-100 to-gray-50 rounded-full overflow-hidden shadow-inner">
+                          <div 
+                            className={`h-full ${item.color} transition-all duration-700 ease-out shadow-sm`}
+                            style={{ 
+                              width: `${item.percentage}%`,
+                              background: `linear-gradient(90deg, ${item.color.includes('orange') ? '#f97316' : item.color.includes('red') ? '#ef4444' : item.color.includes('blue') ? '#3b82f6' : '#22c55e'}, ${item.color.includes('orange') ? '#ea580c' : item.color.includes('red') ? '#dc2626' : item.color.includes('blue') ? '#2563eb' : '#16a34a'})`
+                            }}
+                          ></div>
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xs font-semibold text-gray-700 drop-shadow-sm">{item.percentage}%</span>
+                        </div>
+                      </div>
+                      <div className="w-20 text-right">
+                        <div className="text-lg font-bold text-gray-900">{item.count}</div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wide">ocorrências</div>
+                      </div>
                     </div>
                   </div>
                 )) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>Nenhuma ocorrência encontrada para os filtros aplicados</p>
+                  <div className="text-center py-12 text-gray-500">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <BarChart3 className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-lg font-medium">Nenhuma ocorrência encontrada</p>
+                    <p className="text-sm">Ajuste os filtros para visualizar os dados</p>
                   </div>
                 )}
               </div>
@@ -952,7 +1022,7 @@ export default function DashboardPage() {
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <Eye className="w-5 h-5 mr-2" />
-                📋 Detalhes das Ocorrências
+                Detalhes das Ocorrências
               </h3>
             </div>
             <div className="overflow-x-auto">

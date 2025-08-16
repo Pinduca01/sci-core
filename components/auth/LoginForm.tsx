@@ -59,9 +59,8 @@ export default function LoginForm() {
       // Redirecionar
       router.push(redirectPath)
       
-    } catch (err) {
-      const authError = err as AuthError
-      setError(authError.message || 'Erro ao fazer login. Verifique suas credenciais.')
+    } catch (err: any) {
+      setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.')
       triggerShake()
     } finally {
       setIsLoading(false)
@@ -83,9 +82,8 @@ export default function LoginForm() {
     try {
       await resetPasswordForEmail(resetEmail)
       setResetSuccess(true)
-    } catch (err) {
-      const authError = err as AuthError
-      setError(authError.message || 'Erro ao enviar email de recuperação')
+    } catch (err: any) {
+      setError(err.message || 'Erro ao enviar email de recuperação')
       triggerShake()
     } finally {
       setIsLoading(false)

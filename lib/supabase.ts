@@ -5,7 +5,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Tipos para documentos
+// Interface para upload de documentos
 export interface DocumentoUpload {
   id?: string
   bombeiro_id: number
@@ -24,27 +24,79 @@ export interface DocumentoUpload {
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      exercicios_epi: {
         Row: {
           id: string
-          email: string
-          role: string
+          aeroporto: string
+          data_exercicio: string
+          hora_exercicio: string
+          equipe: string
+          chefe_equipe_id?: number
+          gerente_sci_id?: number
+          observacoes?: string
+          sci_id?: string
+          equipe_id?: string
+          created_by?: string
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
-          email: string
-          role: string
+          aeroporto?: string
+          data_exercicio: string
+          hora_exercicio: string
+          equipe: string
+          chefe_equipe_id?: number
+          gerente_sci_id?: number
+          observacoes?: string
+          sci_id?: string
+          equipe_id?: string
+          created_by?: string
           created_at?: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          email?: string
-          role?: string
+          aeroporto?: string
+          data_exercicio?: string
+          hora_exercicio?: string
+          equipe?: string
+          chefe_equipe_id?: number
+          gerente_sci_id?: number
+          observacoes?: string
+          sci_id?: string
+          equipe_id?: string
+          created_by?: string
           created_at?: string
           updated_at?: string
+        }
+      }
+      participantes_epi: {
+        Row: {
+          id: string
+          exercicio_id: string
+          bombeiro_id: number
+          tempo_calca_bota?: string
+          tempo_tp_completo?: string
+          tempo_epr_tp_completo?: string
+          tempo_epr_sem_tp?: string
+          created_at: string
+        }
+        Insert: {
+          exercicio_id: string
+          bombeiro_id: number
+          tempo_calca_bota?: string
+          tempo_tp_completo?: string
+          tempo_epr_tp_completo?: string
+          tempo_epr_sem_tp?: string
+          created_at?: string
+        }
+        Update: {
+          exercicio_id?: string
+          bombeiro_id?: number
+          tempo_calca_bota?: string
+          tempo_tp_completo?: string
+          tempo_epr_tp_completo?: string
+          tempo_epr_sem_tp?: string
+          created_at?: string
         }
       }
       bombeiros: {
@@ -226,6 +278,12 @@ export type Database = {
         }
       }
     }
+    Functions: {
+      [key: string]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
   }
 }
 
@@ -241,44 +299,41 @@ export const uploadDocumento = async (
     // Gerar nome único para o arquivo
     const timestamp = new Date().getTime()
     const extensao = file.name.split('.').pop()
-    const nomeArquivo = `${bombeiroId}/${timestamp}_${nomePersonalizado || file.name}`
-    
+    const nomeArquivo = `${bombeiroId}_${timestamp}.${extensao}`
+    const caminhoStorage = `documentos/${bombeiroId}/${nomeArquivo}`
+
     // Upload do arquivo para o storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .upload(nomeArquivo, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
+      .upload(caminhoStorage, file)
 
     if (uploadError) {
       throw uploadError
     }
 
-    // Salvar metadados na tabela
-    const { data: docData, error: docError } = await supabase
+    // Salvar informações do documento na tabela
+    const { data, error } = await supabase
       .from('bombeiros_documentos')
       .insert({
         bombeiro_id: bombeiroId,
-        nome_arquivo: nomePersonalizado || file.name,
+        nome_arquivo: nomeArquivo,
         nome_original: file.name,
         tipo_arquivo: file.type,
         tamanho: file.size,
-        caminho_storage: uploadData.path,
-        data_upload: new Date().toISOString()
+        caminho_storage: caminhoStorage,
+        uploaded_by: 'sistema' // Pode ser substituído pelo ID do usuário logado
       })
       .select()
       .single()
 
-    if (docError) {
-      // Se falhar ao salvar metadados, remover arquivo do storage
-      await supabase.storage.from(STORAGE_BUCKET).remove([uploadData.path])
-      throw docError
+    if (error) {
+      throw error
     }
 
-    return { data: docData, error: null }
+    return { data, uploadData }
   } catch (error) {
-    return { data: null, error }
+    console.error('Erro ao fazer upload do documento:', error)
+    throw error
   }
 }
 
@@ -290,9 +345,11 @@ export const getDocumentosBombeiro = async (bombeiroId: number) => {
       .eq('bombeiro_id', bombeiroId)
       .order('data_upload', { ascending: false })
 
-    return { data, error }
+    if (error) throw error
+    return data
   } catch (error) {
-    return { data: null, error }
+    console.error('Erro ao buscar documentos:', error)
+    throw error
   }
 }
 
@@ -302,43 +359,49 @@ export const downloadDocumento = async (caminhoStorage: string) => {
       .from(STORAGE_BUCKET)
       .download(caminhoStorage)
 
-    return { data, error }
+    if (error) throw error
+    return data
   } catch (error) {
-    return { data: null, error }
+    console.error('Erro ao fazer download do documento:', error)
+    throw error
   }
 }
 
 export const deleteDocumento = async (documentoId: string, caminhoStorage: string) => {
   try {
-    // Remover arquivo do storage
+    // Deletar arquivo do storage
     const { error: storageError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .remove([caminhoStorage])
 
     if (storageError) {
-      throw storageError
+      console.error('Erro ao deletar arquivo do storage:', storageError)
     }
 
-    // Remover registro da tabela
+    // Deletar registro da tabela
     const { error: dbError } = await supabase
       .from('bombeiros_documentos')
       .delete()
       .eq('id', documentoId)
 
-    return { error: dbError }
+    if (dbError) throw dbError
+
+    return { success: true }
   } catch (error) {
-    return { error }
+    console.error('Erro ao deletar documento:', error)
+    throw error
   }
 }
 
 export const getDocumentoUrl = async (caminhoStorage: string) => {
   try {
-    const { data, error } = await supabase.storage
+    const { data } = await supabase.storage
       .from(STORAGE_BUCKET)
       .createSignedUrl(caminhoStorage, 3600) // URL válida por 1 hora
 
-    return { data, error }
+    return data?.signedUrl
   } catch (error) {
-    return { data: null, error }
+    console.error('Erro ao gerar URL do documento:', error)
+    throw error
   }
 }
